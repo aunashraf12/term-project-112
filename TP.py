@@ -31,11 +31,15 @@ def main_redrawAll(app):
     drawRect(app.width/2, 300, 60, 25, align="center", fill=app.fillColour3)
 
     if app.showTutorial == True:
-        drawLabel("Press up arrow once to jump twice to double Jump")
-        drawLabel("After double jump you will have to land to jump again.")
-        drawLabel("After the double jump you can hold the up key to hover")
-        drawLabel("collect powerups, avoid the black circles (Quizzez)")
-        drawLabel("You will die if your health becomes zero")
+        drawLabel("Press up arrow once to jump twice to double Jump", 382, 40, size=12)
+        drawLabel("After double jump you will have to land to jump again.", 382, 80, size=12)
+        drawLabel("After the double jump you can hold the up key to hover", 382, 120, size=12)
+        drawLabel("Collect powerups, avoid the black circles (Quizzes)", 382, 160, size=12)
+        drawLabel("You will die if your health becomes zero", 382, 200, size=12)
+        drawLabel("Press R to reset and press P to open pause menu", 382, 240, size=12)
+        drawLabel("Return back to main screen from pause menu", 382, 280, size=12)
+        drawLabel("Return Back", 382, 340, size=12)
+
 
 
     
@@ -59,10 +63,15 @@ def main_onMousePress(app, mouseX, mouseY):
 
     if app.width/2 - 40 <= mouseX <= app.width/2 + 40 and 250 <= mouseY <= 250+25:
         app.showTutorial = True
-    
+
+    if app.showTutorial == True:
+        # CHeck for returning back
+        pass
 
 
 def reset(app):
+    app.steps = 0
+    app.score = 0
     app.paused = False
     app.pauseButtonPressed =  False # This is the physcical pause button check
     app.action = "Run"
@@ -73,6 +82,8 @@ def reset(app):
     app.poles = Poles()
     app.quizzes = Quizzes()
     app.collectibles = collectibles()
+    app.batarangAngle = 0
+    app.batarangs = Batarang()
     app.sliding = False
     app.jumpCount = 0
     app.poleTimer = 0
@@ -108,6 +119,8 @@ def game_onKeyPress(app, key):
                 takeStep(app)
         if key == "S":
             app.stepMode = not app.stepMode
+        if key == "left":
+            app.batarangs.throwBatarang(app)
 
 def game_onKeyHold(app, keys):
     if app.paused == False:
@@ -140,11 +153,14 @@ def game_redrawAll(app):
     if app.paused == False:
         drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
         drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
+        drawLabel(f"Score : {app.score}", 50, 55, size=20)
         app.mainChar.draw(app)
         drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
         app.poles.drawPole(app)
         app.quizzes.draw(app)
         app.collectibles.drawCollectible(app)
+        app.batarangs.drawBatarangs(app)
+        app.batarangs.drawBatarangCount(app)
     else:
         drawRect(0, 0, app.width, app.height, fill="lightSteelBlue")
         drawLabel("Game Paused !", app.width/2, 150, size=24)
@@ -172,10 +188,16 @@ def game_onStep(app):
     # app.mainChar.jump(app)
     if app.paused == False:
         if not app.stepMode and not app.gameOver:
+            app.steps += 1
             app.mainChar.onStep(app)
             app.poles.onStep(app)
             app.quizzes.onStep(app)
             app.collectibles.onStep(app)
+            app.batarangs.onStep(app)
+
+        if app.steps % 20 == 0:
+            app.score += 1
+
 
 
 def game_onMouseMove(app, mouseX, mouseY):

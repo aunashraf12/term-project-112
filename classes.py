@@ -45,11 +45,11 @@ class MainChar:
             app.mainChar.pos[1] -= 180
         app.jumping = True
 
-            
-            # self.pos[1] - app.poles.poles[0][1] + app.poles.height <= self.height / 2:
-            #     self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height / 2
-            # else:
-            #     self.pos[1] = app.poles.poles[0][1] - self.height / 2
+        # if len(app.poles.poles) > 0:
+        #     if self.pos[1] - app.poles.poles[0][1] + app.poles.height <= self.height / 2:
+        #         self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height / 2  # Work on this afterwards
+        #     else:
+        #         self.pos[1] = app.poles.poles[0][1] - self.height / 2
 
 
     def update(self, app, movement=(0, 0)):
@@ -290,7 +290,7 @@ class collectibles:
             myList = list(COLLECTIBLES.keys())
             print(myList)
             thisCollectible = random.choice(myList) # Random
-            self.timeFrequency = random.randint(5, 10)
+            self.timeFrequency = random.randint(1, 5)
             if thisCollectible == "health":
                 width, height = getImageSize(COLLECTIBLES["health"])
                 self.collectibles.append(["health", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
@@ -330,7 +330,8 @@ class collectibles:
                 elif collectible[0] == "x2":
                     app.scoreDoubled = True # Remove this after some time passes by
                 else:
-                    app.mainChar.powerUps[collectible[0]] += 3
+                    app.mainChar.powerUps["batarangs"] += 3
+                    app.batarangs.initialiseBatrangsArray(app)
                 
                 self.collectibles.remove(collectible)
 
@@ -346,6 +347,54 @@ class collectibles:
         self.removeCollectible(app)
         self.detectCollectible(app)
 
+
+class Batarang:
+    def __init__(self) -> None:
+        self.x = app.mainChar.pos[0]
+        self.y = app.mainChar.pos[1]
+        width, height = getImageSize(COLLECTIBLES["batarangs"])
+        self.width, self.height = width / 8, height / 8
+        self.batarangs = []
+        self.curBatarangs = [] # if multiple thrown at once
+        
+
+
+    def initialiseBatrangsArray(self, app):
+        for _ in range(app.mainChar.powerUps["batarangs"]):
+            self.batarangs.append([self.x, self.y])
+
+
+    def throwBatarang(self, app):
+        
+        if app.mainChar.powerUps["batarangs"] > 0:
+            app.batarangAngle = 0
+            self.curBatarangs.append(self.batarangs.pop()) # + [app.batarangAngle])
+            app.throwBatarang = True
+
+    def removeBatarang(self, app):
+        for batarang in self.curBatarangs[:]:
+            if batarang[0] - self.width / 2 >= app.width:
+                self.curBatarangs.remove(batarang)
+
+    def drawBatarangs(self, app):
+        for batarang in self.curBatarangs[:]:
+            drawImage(COLLECTIBLES["batarangs"], batarang[0], batarang[1], align='center', width=self.width, height=self.height, rotateAngle = app.batarangAngle)
+
+    def drawBatarangCount(self, app):
+        drawLabel(f"Batarangs : {len(self.batarangs)}", 70, 80, size=20)
+
+    
+    def onStep(self, app):
+        print(app.mainChar.powerUps)
+        # self.initialiseBatrangsArray(app)
+        self.removeBatarang(app)
+        app.batarangAngle += 10
+        for batarang in self.curBatarangs[:]: # if len(self.curBatarangs) >= 0
+            batarang[0] += 20
+        
+            
+
+            
 
 
 
