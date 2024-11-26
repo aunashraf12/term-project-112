@@ -366,7 +366,7 @@ class Batarang:
 
     def throwBatarang(self, app):
         
-        if app.mainChar.powerUps["batarangs"] > 0:
+        if len(self.curBatarangs) > 0:
             app.batarangAngle = 0
             self.curBatarangs.append(self.batarangs.pop()) # + [app.batarangAngle])
             app.throwBatarang = True

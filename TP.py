@@ -17,18 +17,19 @@ def main_onAppStart(app):
 
 
 def main_redrawAll(app):
-    drawRect(0, 0, app.width, app.height, fill="mediumSeaGreen")
-    drawImage(CMU_RUSH_IMG_URL, app.width/2, app.height/4, width=300, height=200, align="center")
-    # drawRect()
-    drawLabel(f'High Score: {0}', app.width/2, 150, size=24)
-    drawLabel('Freeplay', app.width/2, 200, size=24, bold=True)
-    # Note: we can access app.highScore (and all app variables) from any screen
-    drawLabel('Tutorial', app.width/2, 250, size=16, bold=True) # Will add challenge mode once it is developed
-    drawLabel('Quit', app.width/2, 300, size=16, bold=True)
+    if app.showTutorial == False:
+        drawRect(0, 0, app.width, app.height, fill="mediumSeaGreen")
+        drawImage(CMU_RUSH_IMG_URL, app.width/2, app.height/4, width=300, height=200, align="center")
+        # drawRect()
+        drawLabel(f'High Score: {0}', app.width/2, 150, size=24)
+        drawLabel('Freeplay', app.width/2, 200, size=24, bold=True)
+        # Note: we can access app.highScore (and all app variables) from any screen
+        drawLabel('Tutorial', app.width/2, 250, size=16, bold=True) # Will add challenge mode once it is developed
+        drawLabel('Quit', app.width/2, 300, size=16, bold=True)
 
-    drawRect(app.width/2, 200, 110, 30, align="center", fill=app.fillColour1, opacity=30)
-    drawRect(app.width/2, 250, 80, 25, align="center", fill=app.fillColour2, opacity=30)
-    drawRect(app.width/2, 300, 60, 25, align="center", fill=app.fillColour3)
+        drawRect(app.width/2, 200, 110, 30, align="center", fill=app.fillColour1, opacity=30)
+        drawRect(app.width/2, 250, 80, 25, align="center", fill=app.fillColour2, opacity=30)
+        drawRect(app.width/2, 300, 60, 25, align="center", fill=app.fillColour3)
 
     if app.showTutorial == True:
         drawLabel("Press up arrow once to jump twice to double Jump", 382, 40, size=12)
@@ -38,7 +39,7 @@ def main_redrawAll(app):
         drawLabel("You will die if your health becomes zero", 382, 200, size=12)
         drawLabel("Press R to reset and press P to open pause menu", 382, 240, size=12)
         drawLabel("Return back to main screen from pause menu", 382, 280, size=12)
-        drawLabel("Return Back", 382, 340, size=12)
+        drawLabel("Return Back ,Press m to return ! ", 382, 340, size=12)
 
 
 
@@ -67,6 +68,10 @@ def main_onMousePress(app, mouseX, mouseY):
     if app.showTutorial == True:
         # CHeck for returning back
         pass
+
+def main_onKeyPress(app, key):
+    if key == "m":
+        app.showTutorial = False
 
 
 def reset(app):
