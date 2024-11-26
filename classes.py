@@ -1,0 +1,354 @@
+from cmu_graphics import *
+from functions import *
+import random
+
+COLLECTIBLES = {"health" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\RedCross.png","x2" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\x2 Score .png", "batarangs" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\batarangs.png"}
+
+
+
+class MainChar:
+    def __init__(self, app) -> None:
+        self.steps = 0
+        self.timer = 0
+        self.width = 50 # Width of app is 764
+        self.height = 50 # height of app is around 400
+        self.width = app.mainSpriteWidth/6
+        self.height = app.mainSpriteHeight/6
+        self.ground = 390
+        self.velocity = [0, 0]
+        self.x = 200
+        self.y = self.ground - self.height/2
+        self.pos = [200, self.ground - self.height/2]
+        self.finalPosY = self.y - 50 # The y position after the jump is made
+        # self.collisions = 
+        self.powerUps = {"x2": 0, "batarangs":0}
+        self.slide = False
+        self.healthBoosts = [] # Now append to these boosts as they are collected and then pop from them
+        self.health = 100
+        app.poleBelow = False
+        # app.below = False
+
+    def draw(self, app):
+        # drawRect(self.pos[0], self.pos[1], self.width, self.height, fill="blue", align="center")
+        drawLabel("Health Bar", 10, 8, align="top-left")
+        drawRect(10, 20, 100, 5, fill=None, border="black")
+        drawRect(10, 20, self.health, 5, fill="red") if self.health > 0 else drawRect(10, 20, 100, 5, fill="red", opacity=0)
+
+
+    def jump(self, app):
+        # app.mainCharPosY = self.finalPosY
+        # if not app.poles.checkIllegalColliding(app) == (False, "bottom"):
+        app.animation = "Jump"
+        if app.jumpCount == 1:
+            app.mainChar.pos[1] -= 100
+        if app.jumpCount == 2:
+            app.mainChar.pos[1] -= 180
+        app.jumping = True
+
+            
+            # self.pos[1] - app.poles.poles[0][1] + app.poles.height <= self.height / 2:
+            #     self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height / 2
+            # else:
+            #     self.pos[1] = app.poles.poles[0][1] - self.height / 2
+
+
+    def update(self, app, movement=(0, 0)):
+        self.collisions = {"up" : False, "down" : False, "right" : False, 
+                           "left": False}
+        
+        # The amount the character wil move in one frame
+        frameMovement = (movement[0] + self.velocity[0], movement[1] + 
+                         self.velocity[1])
+
+        self.pos[0] += frameMovement[0]
+        self.pos[1] += frameMovement[1]
+
+
+
+        for pole in app.poles.poles:
+            if app.mainChar.pos[0] + app.mainChar.width // 2  >= pole[0]:         # Checking for collision with poles downwards
+                if app.mainChar.pos[0] - app.mainChar.width // 2 <= pole[0] + pole[2]: 
+                    if app.mainChar.pos[1] + app.mainChar.height // 2 >= pole[1] and app.mainChar.pos[1] - app.mainChar.height // 2 <= pole[1] + app.poles.height:
+                        self.collisions["down"] = True
+
+    
+        self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
+        if self.collisions['down'] or app.mainChar.pos[1] + app.mainChar.height / 2 >= app.mainChar.ground:
+            self.velocity[1] = 0
+
+        if self.collisions["left"]:
+            self.velocity[0] = 0
+
+
+    def grounded(self, app):
+        bottomOfChar = self.y + self.height // 2
+        if self.collisions['down'] or app.mainChar.pos[1] + app.mainChar.height / 2 >= app.mainChar.ground:
+            app.jumpCount = 0
+            return True
+        # elif app.poleBelow and bottomOfChar + 5 >= app.curPolY:
+        #     app.jumpCount = 0
+        #     return True
+        else:
+            return False
+
+    def swing(self, app, x, y):
+        # Line
+        drawLine(x, y, self.x, self.y)
+        
+        if app.swingingPivot == True and abs(app.swingingPivotX - app.mainCharX ) <= 100: # Now check with the space bar in OnkeyHold
+            # Circular motion
+            # Harcode the arc length values
+            pass
+
+
+    def throw(self, app):
+        # if mainChar.batarangs >= 0: # Check this in on key press
+        # Batarang(app)
+        drawLine(app.mainCharX, app.mainCharHeight / 4, app.mainCharX, 3 * app.mainCharHeight / 4) # Rotate this as well
+
+
+    def collecting(app):
+        pass
+        # if app.mainChar touching any powerups:
+        #     app.mainChar.addPowerUp() # Class method
+
+    def onStep(self, app):
+        # self.gravity(app)
+        self.update(app)
+        self.grounded(app) # Checks if the object is grounded and sets the jump count to zero
+        self.steps += 1
+        if self.steps % 30 == 0:
+            self.timer += 1
+        animate(app)
+        
+        # if after making the jump the character is in the middle of a pole
+        if self.collisions["down"] == True:
+            if app.poles.poles[0][1] - (self.pos[1] - self.height // 2) <= self.height:
+                self.pos[1] = app.poles.poles[0][1] - self.height // 2
+            elif self.pos[1] + self.height // 2 - (app.poles.poles[0][1] + app.poles.height) <= self.height:
+                self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height // 2 + 1
+
+
+class Poles:
+    def __init__(self) -> None:
+        self.width = 400 # random between 300 and 500
+        self.height = 10
+        self.poles = []
+
+    def addPole(self, app):
+        poleX = app.width
+        self.width = random.randint(300, 500)
+        poleY = random.randint(100, 300)
+
+        if len(self.poles) == 0:
+            self.poles.append([poleX, poleY, self.width])
+
+    def drawPole(self, app):
+        for pole in self.poles:
+            drawRect(pole[0], pole[1], pole[2] ,self.height)
+
+    def animatePole(self, app):
+        for pole in self.poles:
+            pole[0] -= 8
+
+    def removePole(self, app):
+        for pole in self.poles[:]:
+            if pole[0] + pole[2] <= 0:
+                self.poles.remove(pole)
+        return True
+
+
+    def onStep(self, app):
+        app.poleTimer += 1
+        # print(self.poles)
+        if app.poleTimer % 120 == 0:
+            # print("generated", app.poleTimer)    
+            app.poles.addPole(app)
+
+        app.poles.animatePole(app)
+        app.poles.removePole(app)
+        
+        app.poles.checkForMainChar(app)
+
+        if app.mainChar.health <= 0:
+            app.gameOver = True
+
+
+        
+
+
+    def checkForMainChar(self, app):
+        for pole in self.poles:
+            if app.mainChar.pos[0] + app.mainChar.width//2 >= pole[0] and app.mainChar.pos[0] - app.mainChar.width // 2 <= pole[0] + pole[2] and app.mainChar.y + app.mainChar.height // 2 <= pole[1]:
+                app.poleBelow = True
+                app.curPolY = pole[1]
+            else:
+                app.poleBelow = False
+
+
+class swingingPivots:
+    def __init__(self, app) -> None:
+        self.x = app.width # random between 300 and 500
+        self.y = 50
+        self.r = 10
+        self.blips = 0
+        self.pivots = []
+
+    def addPivot(self, app):
+        self.pivots.append([self.x, self.y, self.r])
+
+    def checkForMainChar(self, app):
+        # ang1 = angleTo(app.mainChar, 200, 300, 200)
+        # x, y = getPointInDir(200, 200, 45, 50)
+        # Line(200, 200, x, y)
+
+        for pivot in self.pivots:
+            if pivot[0] - app.mainChar.pos[0] <= 80:
+                app.mainChar.swing(app, pivot[0], pivot[1])
+
+    def removePivot(self, app):
+        for pivot in self.pivots[:]:
+            if pivot[0] + pivot[2] < 0:
+                self.pivots.remove(pivot)
+
+
+    def onStep(self, app):
+        self.x -= 10
+        self.blips += 1
+        if self.blips % 120 == 0:
+            self.addPivot(app)
+
+        self.removePivot(app)
+
+
+class Quizzes:
+    def __init__(self) -> None:
+        self.x = 0
+        self.y = 0
+        self.r = 10
+        self.steps = 0
+        self.quizzes = []
+
+    def add(self, app):
+        self.x = app.width
+        self.y =  random.randint(200, 400)# random.randint(app.width//2 ,app.width)
+        self.quizzes.append([self.x, self.y, self.r])
+        
+
+    def draw(self, app):
+        for quiz in self.quizzes:
+            drawCircle(quiz[0], quiz[1], quiz[2], fill="black")
+
+    def removeQuiz(self, app):
+        for quiz in self.quizzes[:]:
+            if quiz[0] + quiz[2] <= 0:
+                self.quizzes.remove(quiz)
+
+
+    def touchingMainChar(self, app):
+        rightX = app.mainChar.pos[0] + app.mainChar.width//2
+        topY =  app.mainChar.pos[1] - app.mainChar.height//2
+        bottomY = app.mainChar.pos[1] + app.mainChar.height//2
+        for quiz in self.quizzes:
+            if quiz[1] - self.r > bottomY or quiz[1] + self.r < topY:
+                return False
+            else:
+                if abs(quiz[0] - rightX) <= self.r:
+                    # print("collison")
+                    app.mainChar.health -= 10
+                    self.quizzes.remove(quiz)
+                    return True
+                
+        return False
+    
+    def onStep(self, app):
+        self.steps += 1
+        if self.steps % 120 == 0:
+            self.add(app)
+        for quiz in self.quizzes:
+            quiz[0] -= 15
+
+        self.removeQuiz(app)
+        self.touchingMainChar(app)
+
+
+class Enemy:
+    def __init__(self) -> None:
+        self.width, self.height = 0 , 0
+        self.x = app.width
+        self.y = app.mainChar.ground - self.height / 2
+
+
+class collectibles:
+    def __init__(self) -> None:
+        self.collectibles = [] # 2-D array with the x and y position as well as the width and height of the images
+        self.steps = 0
+        self.timeFrequency = random.randint(10, 20)
+
+    def addCollectible(self, app):
+        if len(self.collectibles) == 0:
+            myList = list(COLLECTIBLES.keys())
+            print(myList)
+            thisCollectible = random.choice(myList) # Random
+            self.timeFrequency = random.randint(5, 10)
+            if thisCollectible == "health":
+                width, height = getImageSize(COLLECTIBLES["health"])
+                self.collectibles.append(["health", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+            elif thisCollectible == "x2":
+                width, height = getImageSize(COLLECTIBLES["x2"])
+                self.collectibles.append(["x2", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+            elif thisCollectible == "batarangs":
+                width, height = getImageSize(COLLECTIBLES["batarangs"])
+                self.collectibles.append(["batarangs", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+
+
+    def drawCollectible(self, app):
+        for collectible in self.collectibles:
+            drawImage(COLLECTIBLES[collectible[0]], collectible[1], collectible[2], width=50, height=50, align="center")
+
+    def animateCollectible(self, app):
+        for collectible in self.collectibles:
+            collectible[1] -= 10
+
+
+    def removeCollectible(self, app):
+        for collectible in self.collectibles[:]:
+            if collectible[1] + collectible[3] // 2 <= 0:
+                self.collectibles.remove(collectible)
+
+    def detectCollectible(self, app):
+        for collectible in self.collectibles[:]:
+            left1, right1 = app.mainChar.pos[0] - app.mainChar.width//2, app.mainChar.pos[0] + app.mainChar.width//2
+            top1, bottom1 = app.mainChar.pos[1] - app.mainChar.height//2, app.mainChar.pos[1] + app.mainChar.height//2
+            left2, right2 = collectible[1] - 50 // 2, collectible[1] + 5 // 2
+            top2, bottom2 = collectible[2] - 50 // 2, collectible[2] + 5 // 2
+
+            if left1 <= right2 and right1 >= left2 and top1 <= bottom2 and bottom1 >= top2:
+                print("colliding")
+                if collectible[0] == "health":
+                    app.mainChar.health = 100
+                elif collectible[0] == "x2":
+                    app.scoreDoubled = True # Remove this after some time passes by
+                else:
+                    app.mainChar.powerUps[collectible[0]] += 3
+                
+                self.collectibles.remove(collectible)
+
+
+    def onStep(self, app):
+        print(self.collectibles)
+        self.steps += 1
+        if self.steps % (self.timeFrequency * 30) == 0:
+            self.addCollectible(app)
+
+        
+        self.animateCollectible(app)
+        self.removeCollectible(app)
+        self.detectCollectible(app)
+
+
+
+
+
+# MAIN MENU
+# Collision Game Over Pause MENU
