@@ -1,5 +1,6 @@
 from cmu_graphics import * 
 from classes import * 
+from functions import *
 # import random
 
 BACKGROUND_IMAGE_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMUPic.png"
@@ -10,6 +11,7 @@ CMU_RUSH_IMG_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-p
 ##################
 
 def main_onAppStart(app):
+    print("started")
     app.fillColour1 = None
     app.fillColour2 = None
     app.fillColour3 = None
@@ -75,6 +77,7 @@ def main_onKeyPress(app, key):
 
 
 def reset(app):
+    app.scrollX = 0
     app.steps = 0
     app.score = 0
     app.paused = False
@@ -89,6 +92,7 @@ def reset(app):
     app.collectibles = collectibles()
     app.batarangAngle = 0
     app.batarangs = Batarang()
+    app.frames = Frames()
     app.sliding = False
     app.jumpCount = 0
     app.poleTimer = 0
@@ -156,13 +160,14 @@ def game_onKeyRelease(app, key):
 
 def game_redrawAll(app):
     if app.paused == False:
-        drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
+        # drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
         drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
         drawLabel(f"Score : {app.score}", 50, 55, size=20)
         app.mainChar.draw(app)
         drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
         app.poles.drawPole(app)
         app.quizzes.draw(app)
+        app.frames.drawFrames(app)
         app.collectibles.drawCollectible(app)
         app.batarangs.drawBatarangs(app)
         app.batarangs.drawBatarangCount(app)
@@ -233,6 +238,7 @@ def game_onMousePress(app, mouseX, mouseY):
 
 # runApp(width=764, height=425)
 
+
 print("""For now there is a start screen. The square can jump and then move 
 onto the coming poles. There are new poles appearing as well as some black
 balls which represent quizzes for now
@@ -240,5 +246,5 @@ There is a health bar that changes after it is hit
 by one of the black balls I am in the process of implementing the swinging
 mechanism using hangers but haven't finished. The game is over when the 
 health becomes zero.""")
-
-runAppWithScreens(width=764, height=425, initialScreen='main')
+print("jjh")
+runAppWithScreens(width=764, height=425, initialScreen='main_redrawAll')
