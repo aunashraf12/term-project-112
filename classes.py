@@ -1,9 +1,13 @@
 from cmu_graphics import *
 from functions import *
 import random
+import math
 
 COLLECTIBLES = {"health" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\RedCross.png","x2" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\x2 Score .png", "batarangs" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\batarangs.png"}
-
+ATTACKER_1 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker1\tile00"
+ATTACKER1_IMAGES = [loadImageFromStringReference(f'{ATTACKER_1}{i}.png') for i in range(8)]
+print(ATTACKER1_IMAGES)
+ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker2\Idle.jpg"
 
 
 class MainChar:
@@ -18,6 +22,9 @@ class MainChar:
         self.velocity = [0, 0]
         self.x = 200
         self.y = self.ground - self.height/2
+        self.dx = 0
+        self.dy = 0
+        self.ddy = 1
         self.pos = [200, self.ground - self.height/2]
         self.finalPosY = self.y - 50 # The y position after the jump is made
         # self.collisions = 
@@ -40,16 +47,10 @@ class MainChar:
         # if not app.poles.checkIllegalColliding(app) == (False, "bottom"):
         app.animation = "Jump"
         if app.jumpCount == 1:
-            app.mainChar.pos[1] -= 100
+            app.mainChar.dy = -15
         if app.jumpCount == 2:
-            app.mainChar.pos[1] -= 180
+            app.mainChar.dy = -20
         app.jumping = True
-
-        # if len(app.poles.poles) > 0:
-        #     if self.pos[1] - app.poles.poles[0][1] + app.poles.height <= self.height / 2:
-        #         self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height / 2  # Work on this afterwards
-        #     else:
-        #         self.pos[1] = app.poles.poles[0][1] - self.height / 2
 
 
     def update(self, app, movement=(0, 0)):
@@ -60,12 +61,19 @@ class MainChar:
         frameMovement = (movement[0] + self.velocity[0], movement[1] + 
                          self.velocity[1])
 
-        self.pos[0] += frameMovement[0]
-        self.pos[1] += frameMovement[1]
-        # app.scrollX += frameMovement[0]
-        # app.scrollY += frameMovement[1]
-        app.frames.scrollRight()
+        # self.pos[0] += frameMovement[0]
 
+        self.dy += self.ddy
+        self.pos[1] += self.dy
+
+        if self.pos[1] + self.height//2 >= self.ground:
+            self.pos[1] = self.ground - self.width//2
+            self.dy = 0
+
+        
+        
+
+        app.frames.scrollRight()
 
         for pole in app.poles.poles:
             if app.mainChar.pos[0] + app.mainChar.width // 2  >= pole[0]:         # Checking for collision with poles downwards
@@ -74,12 +82,9 @@ class MainChar:
                         self.collisions["down"] = True
 
     
-        self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
-        if self.collisions['down'] or app.mainChar.pos[1] + app.mainChar.height / 2 >= app.mainChar.ground:
-            self.velocity[1] = 0
-
-        if self.collisions["left"]:
-            self.velocity[0] = 0
+        # self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
+        if self.collisions['down']:
+            self.dy = 0
 
 
     def grounded(self, app):
@@ -87,12 +92,9 @@ class MainChar:
         if self.collisions['down'] or app.mainChar.pos[1] + app.mainChar.height / 2 >= app.mainChar.ground:
             app.jumpCount = 0
             return True
-        # elif app.poleBelow and bottomOfChar + 5 >= app.curPolY:
-        #     app.jumpCount = 0
-        #     return True
-        else:
-            return False
+        return False
 
+        
     def swing(self, app, x, y):
         # Line
         drawLine(x, y, self.x, self.y)
@@ -116,7 +118,8 @@ class MainChar:
 
     def onStep(self, app):
         # self.gravity(app)
-        self.update(app)
+        if not app.swinging:
+            self.update(app)
         self.grounded(app) # Checks if the object is grounded and sets the jump count to zero
         self.steps += 1
         if self.steps % 30 == 0:
@@ -188,25 +191,21 @@ class Poles:
                 app.poleBelow = False
 
 
-class swingingPivots:
+class pivots:
     def __init__(self, app) -> None:
         self.x = app.width # random between 300 and 500
-        self.y = 50
+        self.y = app.height / 2
         self.r = 10
-        self.blips = 0
+        self.steps = 0
         self.pivots = []
 
     def addPivot(self, app):
-        self.pivots.append([self.x, self.y, self.r])
+        if len(self.pivots) == 0:
+            self.pivots.append([self.x, self.y, self.r])
 
-    def checkForMainChar(self, app):
-        # ang1 = angleTo(app.mainChar, 200, 300, 200)
-        # x, y = getPointInDir(200, 200, 45, 50)
-        # Line(200, 200, x, y)
-
+    def drawPivot(self, app):
         for pivot in self.pivots:
-            if pivot[0] - app.mainChar.pos[0] <= 80:
-                app.mainChar.swing(app, pivot[0], pivot[1])
+            drawCircle(pivot[0], pivot[1], self.r, fill="red")
 
     def removePivot(self, app):
         for pivot in self.pivots[:]:
@@ -215,12 +214,146 @@ class swingingPivots:
 
 
     def onStep(self, app):
-        self.x -= 10
-        self.blips += 1
-        if self.blips % 120 == 0:
+        print("Pivots: ", self.pivots)
+        for pivot in self.pivots:
+            pivot[0] -= 10
+        self.steps += 1
+        if self.steps % 120 == 0:
             self.addPivot(app)
 
         self.removePivot(app)
+
+        for pivot in self.pivots:
+            if abs(app.mainChar.pos[0] - pivot[0]) < 100:
+                    app.swingingPivots.stopSwinging()
+
+
+
+class swingingPivot:
+    def __init__(self, length=150, swingRange=(-math.pi/4, math.pi/4)):
+        self.length = length
+        self.swingRange = swingRange
+        self.angle = 0
+        self.angularVelocity = 0
+        self.gravity = 0.0005
+        app.swinging = False
+
+    def startSwinging(self, x, y):
+        self.pivotX = x
+        self.pivotY = y
+        app.swinging = True
+
+    def stopSwinging(self):
+        app.swinging = False
+
+    def update(self, player):
+        print("hello")
+        if app.swinging:
+            # Apply physics
+            angularAcceleration = -self.gravity * math.sin(self.angle)
+            self.angularVelocity += angularAcceleration
+            self.angle += self.angularVelocity
+
+            # Release if angle exceeds maximum right swing
+            if self.angle >= self.swingRange[1]:
+                app.swinging = False
+                tangentialSpeed = self.angularVelocity * self.length
+                app.mainChar.dx = tangentialSpeed * math.cos(self.angle)
+                app.mainChar.dy = tangentialSpeed * math.sin(self.angle)
+                return
+
+            # Update player position
+            app.mainChar.pos[0] = self.pivotX + self.length * math.sin(self.angle)
+            app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
+
+    def draw(self):
+        if app.swinging:
+            # Draw the rope
+            drawLine(self.pivotX, self.pivotY, app.mainChar.pos[0], app.mainChar.pos[1], fill="black", lineWidth=2)
+
+        # Draw the pivot
+        drawCircle(self.pivotX, self.pivotY, 5, fill="red")
+
+    def onStep(self, app):
+        if app.swinging:
+            self.update(app)
+
+
+class Attacker:
+    def __init__(self) -> None:
+        self.animated = True
+        self.attacker1Index = 0
+        self.attacker2 = loadImageFromStringReference(f'{ATTACKER_2}')
+        self.attackers = []
+        self.steps = 0
+
+        
+
+    def setWidthHeight(self):
+        if self.animated:
+            self.width, self.height = getImageSize(ATTACKER1_IMAGES[self.attacker1Index])
+        else:
+            self.width, self.height = getImageSize(self.attacker2)
+
+    def draw(self):
+        for attacker in self.attackers:
+            if attacker[-1] == True:
+                drawImage(ATTACKER1_IMAGES[self.attacker1Index], attacker[0], attacker[1], align='center') # , width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
+
+            else:
+                drawImage(self.attacker2, attacker[0] ,attacker[1], align="center")
+
+    def addAttacker(self, app):
+
+        choice = random.choice([1, 2])
+        if choice == 1:
+            self.attackers.append([app.width + 5, app.mainChar.ground - self.height / 2, self.animated])
+            self.animated = not self.animated
+        else:
+            if len(app.poles.poles) != 0:
+                self.attackers.append([app.poles.poles[0][0] + app.poles.poles[0][2] // 2, app.poles.poles[0][1] - self.width//2, self.animated])
+                self.animated = not self.animated
+
+        if len(app.poles.poles) != 0:
+            self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.height / 2, app.poles.poles[0][1] - self.width//2]), self.animated])
+            self.animated = not self.animated
+        else:
+            self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.height / 2]), self.animated])
+            self.animated = not self.animated
+        choice = random.choice([1, 2])
+
+        if choice == 1: 
+            if len(self.attackers) == 1 and len(app.poles.poles) != 0:
+                self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.width / 2, app.poles.poles[0][1] - self.width//2]), self.animated])
+                self.animated = not self.animated
+
+    def moveAttacker(self, app):
+        for attacker in self.attackers:
+            if attacker[1] == app.mainChar.ground - self.height / 2: # If on ground
+                attacker[0] -= 10
+            else:
+                attacker[0] = app.poles.poles[0][0] + app.poles.poles[0][2] // 2 # Stay on the middle of the pole
+    def removeAttacker(self, app):
+        for attacker in self.attackers[:]:
+            if attacker[0] + self.width // 2 <= 0:
+                self.attackers.remove(attacker)
+
+
+
+    def onStep(self, app):
+        self.setWidthHeight()
+        if self.steps % 120 == 0:
+            self.addAttacker(app)
+        # self.moveAttacker(app)
+        self.removeAttacker(app)
+        if self.attacker1Index == 7:
+            self.attacker1Index = 0
+        else:
+            self.attacker1Index += 1
+
+
+
+        
 
 
 class Quizzes:

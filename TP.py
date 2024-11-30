@@ -1,10 +1,11 @@
 from cmu_graphics import * 
 from classes import * 
 from functions import *
-# import random
+ # import random
 
 BACKGROUND_IMAGE_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMUPic.png"
 CMU_RUSH_IMG_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMURUSH.png"
+
 
 #############
 # Main Menu
@@ -85,7 +86,11 @@ def reset(app):
     app.action = "Run"
     app.mainSpriteIndex = 0
     animate(app)
+    app.swinging = False
     app.mainChar = MainChar(app)
+    app.attacker = Attacker()
+    app.swingingPivots = swingingPivot()
+    app.pivots = pivots(app)
     app.mainChar.hover = False
     app.poles = Poles()
     app.quizzes = Quizzes()
@@ -142,6 +147,13 @@ def game_onKeyHold(app, keys):
         if "down" in keys and not app.jumping:
             app.sliding = True
             app.action = "Slide"
+
+        if "space" in keys and not app.swinging:  
+            # Check if player is near enough to start swinging
+            for pivot in app.pivots.pivots:
+                if abs(app.mainChar.pos[0] - pivot[0]) < 100:
+                    app.swingingPivots.startSwinging(pivot[0], pivot[1])
+
     
 
 
@@ -156,6 +168,10 @@ def game_onKeyRelease(app, key):
         if key == "down":
             app.sliding = False
             app.action = "Run"
+
+        if key == "space":
+            app.swingingPivots.stopSwinging()
+        
     
 
 def game_redrawAll(app):
@@ -168,9 +184,13 @@ def game_redrawAll(app):
         drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
         app.poles.drawPole(app)
         app.quizzes.draw(app)
+        app.pivots.drawPivot(app)
         app.collectibles.drawCollectible(app)
         app.batarangs.drawBatarangs(app)
         app.batarangs.drawBatarangCount(app)
+        app.attacker.draw()
+
+
     else:
         drawRect(0, 0, app.width, app.height, fill="lightSteelBlue")
         drawLabel("Game Paused !", app.width/2, 150, size=24)
@@ -201,9 +221,13 @@ def game_onStep(app):
             app.steps += 1
             app.mainChar.onStep(app)
             app.poles.onStep(app)
+            app.attacker.onStep(app)
             app.quizzes.onStep(app)
             app.collectibles.onStep(app)
             app.batarangs.onStep(app)
+            app.swingingPivots.onStep(app)
+            app.pivots.onStep(app)
+
 
         if app.steps % 20 == 0:
             app.score += 1

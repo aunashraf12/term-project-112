@@ -1,189 +1,100 @@
-# from cmu_graphics import *
-
-# class Frames:
-#     def __init__(self):
-#         self.currentFrame = 0  # Start with the first frame index
-#         self.frameWidth = 800  # Width of each frame
-#         self.frames = [self.drawFrame1, self.drawFrame2]  # List of frame drawing functions
-#         self.xOffset = 0  # Horizontal offset for scrolling
-
-#     def scrollRight(self):
-#         # Move frames to the left by increasing xOffset
-#         self.xOffset -= 5  # Adjust speed as needed
-
-#         # Reset xOffset to loop frames infinitely
-#         if self.xOffset <= -self.frameWidth:
-#             self.xOffset = 0
-#             # Swap frame order to simulate continuous scrolling
-#             self.frames.append(self.frames.pop(0))
-
-#     def drawFrames(self, app):
-#         # Draw current and next frame for seamless transition
-#         for i in range(2):  # Draw two frames at a time for smooth transition
-#             with translate(i * self.frameWidth + self.xOffset, 0):
-#                 self.frames[i]()
-
-#     def drawFrame1(self):
-#         # Draw sky for frame 1
-#         drawRect(0, 0, app.width, app.height, fill='skyBlue')
-        
-#         # Define buildings for frame 1
-#         building_specs = [
-#             {'color': 'lightGray', 'width': 100, 'height': 300, 'x_start': 50},
-#             {'color': 'darkGray', 'width': 120, 'height': 350, 'x_start': 210},
-#             {'color': 'dimGray', 'width': 80, 'height': 250, 'x_start': 380},
-#             {'color': 'slateGray', 'width': 90, 'height': 400, 'x_start': 510}
-#         ]
-        
-#         self.drawBuildings(building_specs)
-
-#     def drawFrame2(self):
-#         # Draw sky for frame 2
-#         drawRect(0, 0, app.width, app.height, fill='lightSkyBlue')
-        
-#         # Define buildings for frame 2
-#         building_specs = [
-#             {'color': 'darkSlateGray', 'width': 110, 'height': 320, 'x_start': 70},
-#             {'color': 'gray', 'width': 130, 'height': 300, 'x_start': 240},
-#             {'color': 'lightSlateGray', 'width': 90, 'height': 280, 'x_start': 410},
-#             {'color': 'darkGray', 'width': 100, 'height': 360, 'x_start': 580}
-#         ]
-        
-#         self.drawBuildings(building_specs)
-
-#     def drawBuildings(self, building_specs):
-#         for spec in building_specs:
-#             building_color = spec['color']
-#             building_width = spec['width']
-#             building_height = spec['height']
-#             x_start = spec['x_start']
-
-#             # Draw the building
-#             drawRect(x_start, app.height - building_height,
-#                      building_width, building_height,
-#                      fill=building_color)
-
-#             # Define window properties
-#             window_x_spacing = 25
-#             window_y_spacing = 50
-#             window_width = 20
-#             window_height = 30
-
-#             y_start = app.height - building_height
-
-#             # Draw windows with uniform spacing
-#             for y in range(y_start + window_y_spacing // 2,
-#                            app.height - window_height - window_y_spacing // 2,
-#                            window_y_spacing):
-#                 for x in range(x_start + window_x_spacing // 2,
-#                                x_start + building_width - window_width - window_x_spacing // 2,
-#                                window_x_spacing):
-#                     drawRect(x, y, window_width, window_height, fill='yellow')
-
-# # Initialize the Frames object
-# frames = Frames()
-
-# def redrawAll(app):
-#     frames.drawFrames(app)
-
-# def onKeyHold(keys):
-#     if "right" in keys:
-#         frames.scrollRight()
-
-# # Run the application with key hold event to scroll frames continuously
-# runApp()
-
 from cmu_graphics import *
+import math
 
-class Frames:
-    def __init__(self):
-        self.currentFrame = 0  # Start with the first frame index
-        self.frameWidth = 800  # Width of each frame
-        self.xOffset = 0  # Horizontal offset for scrolling
-        self.frames = [self.drawFrame1, self.drawFrame2]  # List of frame drawing functions
+# Parameters
+num_pivots = 3  # Number of pivots
+pivot_spacing = 50  # Distance between pivots
+initial_pivot_x, pivot_y = 200, 100  # Initial pivot position
+length = 150  # Length of the rope
+angle = -math.pi / 6  # Initial angle (leftmost position)
+angular_velocity = 0  # Angular velocity
+angular_acceleration = 0  # Angular acceleration
+gravity = 0.0005  # Gravitational constant for swinging
 
-    def scrollRight(self):
-        # Move frames to the left by increasing xOffset
-        self.xOffset -= 10  # Adjust speed as needed
+# Swing range
+swing_range_left = -math.pi / 6  # Leftmost swing limit
+swing_range_right = math.pi / 6  # Rightmost swing limit
 
-        # Reset xOffset to loop frames infinitely
-        if self.xOffset <= -self.frameWidth:
-            self.xOffset = 0
-            # Swap frame order to simulate continuous scrolling
-            self.frames.append(self.frames.pop(0))
+# Square properties
+square_size = 20
+square_x_velocity = 1  # Constant rightward movement speed
+max_distance = 300  # Swinging stops if the square moves beyond this distance
 
-    def drawFrames(self, app):
-        # Draw current and next frame for seamless transition
-        for i in range(2):  # Draw two frames at a time for smooth transition
-            xPosition = i * self.frameWidth + self.xOffset
-            if xPosition < app.width:
-                self.frames[i](app, xPosition)
+# State tracking
+pivots = []  # List of pivot points
+squares = []  # List of square objects
+ropes = []  # List of ropes
+swinging_states = [False] * num_pivots  # Swinging states for each square
+angles = [angle] * num_pivots  # Angles for each pivot
+angular_velocities = [0] * num_pivots  # Angular velocities for each pivot
 
-    def drawFrame1(self, app, xOffset):
-        # Draw sky for frame 1
-        drawRect(xOffset, 0, app.width, app.height, fill='skyBlue')
-        
-        # Define buildings for frame 1
-        buildingSpecs = [
-            {'color': 'lightGray', 'width': 100, 'height': 300, 'xStart': xOffset + 50},
-            {'color': 'darkGray', 'width': 120, 'height': 350, 'xStart': xOffset + 210},
-            {'color': 'dimGray', 'width': 80, 'height': 250, 'xStart': xOffset + 380},
-            {'color': 'slateGray', 'width': 90, 'height': 400, 'xStart': xOffset + 510}
-        ]
-        
-        self.drawBuildings(app, buildingSpecs)
+# Create pivot, square, and rope objects
+for i in range(num_pivots):
+    pivot_x = initial_pivot_x + i * pivot_spacing
+    pivots.append(Circle(pivot_x, pivot_y, 5, fill="red"))
+    square_x = pivot_x + length * math.sin(angle)
+    square_y = pivot_y + length * math.cos(angle)
+    squares.append(Rect(square_x, square_y, square_size, square_size, fill="blue"))
+    ropes.append(Line(pivot_x, pivot_y, square_x, square_y, lineWidth=2, fill="black", visible=False))
 
-    def drawFrame2(self, app, xOffset):
-        # Draw sky for frame 2
-        drawRect(xOffset, 0, app.width, app.height, fill='lightSkyBlue')
-        
-        # Define buildings for frame 2
-        buildingSpecs = [
-            {'color': 'darkSlateGray', 'width': 110, 'height': 320, 'xStart': xOffset + 70},
-            {'color': 'gray', 'width': 130, 'height': 300, 'xStart': xOffset + 240},
-            {'color': 'lightSlateGray', 'width': 90, 'height': 280, 'xStart': xOffset + 410},
-            {'color': 'darkGray', 'width': 100, 'height': 360, 'xStart': xOffset + 580}
-        ]
-        
-        self.drawBuildings(app, buildingSpecs)
+# Function to calculate the square's position for a given pivot
+def calculate_square_position(index):
+    pivot_x = pivots[index].centerX
+    square_x = pivot_x + length * math.sin(angles[index])
+    square_y = pivot_y + length * math.cos(angles[index])
+    return square_x, square_y
 
-    def drawBuildings(self, app, buildingSpecs):
-        for spec in buildingSpecs:
-            buildingColor = spec['color']
-            buildingWidth = spec['width']
-            buildingHeight = spec['height']
-            xStart = spec['xStart']
+def onStep():
+    global angular_velocities, angles, swinging_states
 
-            # Draw the building
-            drawRect(xStart, app.height - buildingHeight,
-                     buildingWidth, buildingHeight,
-                     fill=buildingColor)
+    # Update positions of all pivots and squares
+    for i in range(num_pivots):
+        # Move pivot and square to the right
+        pivots[i].centerX += square_x_velocity
+        pivot_x = pivots[i].centerX
 
-            # Define window properties
-            windowXSpacing = 25
-            windowYSpacing = 50
-            windowWidth = 20
-            windowHeight = 30
+        # Update square position
+        square_x, square_y = calculate_square_position(i)
 
-            yStart = app.height - buildingHeight
+        # Check if the square is within the allowed swinging distance
+        distance_from_pivot = abs(square_x - pivot_x)
+        if distance_from_pivot > max_distance:
+            swinging_states[i] = False
+            ropes[i].visible = False  # Hide the rope when not swinging
 
-            # Draw windows with uniform spacing
-            for y in range(yStart + windowYSpacing // 2,
-                           app.height - windowHeight - windowYSpacing // 2,
-                           windowYSpacing):
-                for x in range(xStart + windowXSpacing // 2,
-                               xStart + buildingWidth - windowWidth - windowXSpacing // 2,
-                               windowXSpacing):
-                    drawRect(x, y, windowWidth, windowHeight, fill='yellow')
+        # Swing logic if the space bar is held and within range
+        if swinging_states[i]:
+            angular_acceleration = -gravity * math.sin(angles[i])
+            angular_velocities[i] += angular_acceleration
+            angles[i] += angular_velocities[i]
 
-# Initialize the Frames object
-app.frames = Frames()
+            # Clamp angle within the range
+            if angles[i] > swing_range_right:
+                angles[i] = swing_range_right
+                angular_velocities[i] *= -1  # Reverse direction
+            elif angles[i] < swing_range_left:
+                angles[i] = swing_range_left
+                angular_velocities[i] *= -1  # Reverse direction
 
-def redrawAll(app):
-    app.frames.drawFrames(app)
+            # Update rope visibility and position
+            ropes[i].visible = True
+            ropes[i].x1, ropes[i].y1 = pivot_x, pivot_y
+            ropes[i].x2, ropes[i].y2 = square_x, square_y
 
-def onKeyHold(app, keys):
-    if "right" in keys:
-        app.frames.scrollRight()
+        # Update graphical positions of squares
+        squares[i].centerX = square_x
+        squares[i].centerY = square_y
 
-runApp(800, 425)
+# Event handler for key press to control swinging
+def onKeyHold(keys):
+    global swinging_states
+    if 'space' in keys:
+        swinging_states = [True] * num_pivots
+    else:
+        swinging_states = [False] * num_pivots
+        for rope in ropes:
+            rope.visible = False  # Hide ropes when not swinging
+
+# Add graphical elements to canvas
+app.stepsPerSecond = 100
+cmu_graphics.run()
