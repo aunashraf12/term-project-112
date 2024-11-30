@@ -62,7 +62,7 @@ class MainChar:
 
         self.pos[0] += frameMovement[0]
         self.pos[1] += frameMovement[1]
-        app.scrollX += frameMovement[0]
+        # app.scrollX += frameMovement[0]
         # app.scrollY += frameMovement[1]
         app.frames.scrollRight()
 
@@ -481,14 +481,7 @@ class Frames:
 # Initialize the Frames object
 
 
-def redrawAll(app):
-    app.frames.drawFrames(app)
 
-def onKeyHold(app, keys):
-    if "right" in keys:
-        app.frames.scrollRight()
-
-runApp(800, 700)
         
             
 

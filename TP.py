@@ -161,13 +161,13 @@ def game_onKeyRelease(app, key):
 def game_redrawAll(app):
     if app.paused == False:
         # drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
+        app.frames.drawFrames(app)
         drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
         drawLabel(f"Score : {app.score}", 50, 55, size=20)
         app.mainChar.draw(app)
         drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
         app.poles.drawPole(app)
         app.quizzes.draw(app)
-        app.frames.drawFrames(app)
         app.collectibles.drawCollectible(app)
         app.batarangs.drawBatarangs(app)
         app.batarangs.drawBatarangCount(app)
@@ -247,4 +247,4 @@ by one of the black balls I am in the process of implementing the swinging
 mechanism using hangers but haven't finished. The game is over when the 
 health becomes zero.""")
 print("jjh")
-runAppWithScreens(width=764, height=425, initialScreen='main_redrawAll')
+runAppWithScreens(width=800, height=425, initialScreen='main')
