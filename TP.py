@@ -96,8 +96,9 @@ def reset(app):
     app.quizzes = Quizzes()
     app.collectibles = collectibles()
     app.batarangAngle = 0
-    app.batarangs = Batarang()
+    app.batarangs = Batarang(app)
     app.frames = Frames()
+    app.jumping = False
     app.sliding = False
     app.jumpCount = 0
     app.poleTimer = 0

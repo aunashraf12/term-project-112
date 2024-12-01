@@ -1,4 +1,5 @@
 from cmu_graphics import *
+from cmu_graphics.shape_logic import loadImageFromStringReference
 from functions import *
 import random
 import math
@@ -6,8 +7,9 @@ import math
 COLLECTIBLES = {"health" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\RedCross.png","x2" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\x2 Score .png", "batarangs" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\batarangs.png"}
 ATTACKER_1 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker1\tile00"
 ATTACKER1_IMAGES = [loadImageFromStringReference(f'{ATTACKER_1}{i}.png') for i in range(8)]
-print(ATTACKER1_IMAGES)
-ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker2\Idle.jpg"
+ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker2\Idle.png"
+DEAD = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\deadAttacker\tile00"
+DEAD_ATTACKER_IMAGES = [loadImageFromStringReference(f'{DEAD}{i}.png') for i in range(4)]
 
 
 class MainChar:
@@ -214,7 +216,6 @@ class pivots:
 
 
     def onStep(self, app):
-        print("Pivots: ", self.pivots)
         for pivot in self.pivots:
             pivot[0] -= 10
         self.steps += 1
@@ -247,7 +248,6 @@ class swingingPivot:
         app.swinging = False
 
     def update(self, player):
-        print("hello")
         if app.swinging:
             # Apply physics
             angularAcceleration = -self.gravity * math.sin(self.angle)
@@ -278,16 +278,15 @@ class swingingPivot:
         if app.swinging:
             self.update(app)
 
-
 class Attacker:
     def __init__(self) -> None:
         self.animated = True
         self.attacker1Index = 0
         self.attacker2 = loadImageFromStringReference(f'{ATTACKER_2}')
         self.attackers = []
+        self.dead = False
+        self.touching = False
         self.steps = 0
-
-        
 
     def setWidthHeight(self):
         if self.animated:
@@ -297,65 +296,126 @@ class Attacker:
 
     def draw(self):
         for attacker in self.attackers:
-            if attacker[-1] == True:
-                drawImage(ATTACKER1_IMAGES[self.attacker1Index], attacker[0], attacker[1], align='center') # , width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
-
+            if attacker[2] != True:
+                if attacker[-1]:  # If animated
+                    drawImage(ATTACKER1_IMAGES[self.attacker1Index], attacker[0], attacker[1], align='center')
+                else:
+                    drawImage(self.attacker2, attacker[0], attacker[1], align="center")
             else:
-                drawImage(self.attacker2, attacker[0] ,attacker[1], align="center")
+                for image in DEAD_ATTACKER_IMAGES:
+                    drawImage(image, attacker[0], attacker[1], align='center')
 
     def addAttacker(self, app):
+        # Ensure width and height are set before adding attackers
+        self.setWidthHeight()
 
         choice = random.choice([1, 2])
         if choice == 1:
-            self.attackers.append([app.width + 5, app.mainChar.ground - self.height / 2, self.animated])
-            self.animated = not self.animated
+            # Add attacker on the ground
+            self.attackers.append([app.width + 5, app.mainChar.ground - self.height / 2,False , True]) # [xPos, yPos, dead, animated]
         else:
-            if len(app.poles.poles) != 0:
-                self.attackers.append([app.poles.poles[0][0] + app.poles.poles[0][2] // 2, app.poles.poles[0][1] - self.width//2, self.animated])
-                self.animated = not self.animated
-
-        if len(app.poles.poles) != 0:
-            self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.height / 2, app.poles.poles[0][1] - self.width//2]), self.animated])
-            self.animated = not self.animated
-        else:
-            self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.height / 2]), self.animated])
-            self.animated = not self.animated
-        choice = random.choice([1, 2])
-
-        if choice == 1: 
-            if len(self.attackers) == 1 and len(app.poles.poles) != 0:
-                self.attackers.append([app.width + 5, random.choice([app.mainChar.ground - self.width / 2, app.poles.poles[0][1] - self.width//2]), self.animated])
-                self.animated = not self.animated
+            # Add attacker on the first pole if it exists
+            if app.poles.poles:
+                pole = app.poles.poles[0]
+                self.attackers.append([pole[0] + pole[2] // 2, pole[1] - self.width / 2, False, False])
 
     def moveAttacker(self, app):
         for attacker in self.attackers:
-            if attacker[1] == app.mainChar.ground - self.height / 2: # If on ground
+            if attacker[1] == app.mainChar.ground - self.height / 2:  # If on ground
                 attacker[0] -= 10
-            else:
-                attacker[0] = app.poles.poles[0][0] + app.poles.poles[0][2] // 2 # Stay on the middle of the pole
-    def removeAttacker(self, app):
+            elif app.poles.poles:  # Ensure poles exist before accessing
+                pole = app.poles.poles[0]
+                attacker[0] = pole[0] + pole[2] // 2  # Stay on the middle of the pole
+
+    def removeAttacker(self):
+        # Use list comprehension to filter out attackers that are off-screen
+        self.attackers = [attacker for attacker in self.attackers if attacker[0] + self.width // 2 > 0]
+
+    def touchingMainChar(self, app):
+        rightX = app.mainChar.pos[0] + app.mainChar.width//2
+        leftX = app.mainChar.pos[0] - app.mainChar.width//2
+        topY =  app.mainChar.pos[1] - app.mainChar.height//2
+        bottomY = app.mainChar.pos[1] + app.mainChar.height//2
+
         for attacker in self.attackers[:]:
-            if attacker[0] + self.width // 2 <= 0:
-                self.attackers.remove(attacker)
+            right2X = attacker[0] + self.width // 2
+            left2X = attacker[0] - self.width // 2
+            top2Y = attacker[1] - self.height // 2
+            bottom2Y = attacker[1] + self.height // 2
+            if leftX <= right2X - self.width//2 and rightX >= left2X + self.width // 2 and bottomY >= top2Y + self.height // 2 and topY <= bottom2Y and app.action != "Slide" and not self.touching and attacker[2] != True:
+                print("colliding")
+                app.mainChar.health -= 25 if attacker[-1] == True else 20
+                self.touching = True
+                return True
+            elif self.touching == True and leftX > right2X or rightX < left2X or bottomY < top2Y or topY > bottom2Y: # Reverse of the above condition
+                
+                self.touching = False
+                return False
+                
+        return False
+    
+    def checkForDeath(self, app):
+        # Case 1 main char
+        rightX = app.mainChar.pos[0] + app.mainChar.width//2
+        leftX = app.mainChar.pos[0] - app.mainChar.width//2
+        topY =  app.mainChar.pos[1] - app.mainChar.height//2
+        bottomY = app.mainChar.pos[1] + app.mainChar.height//2
+
+        for attacker in self.attackers[:]:
+            right2X = attacker[0] + self.width // 2
+            left2X = attacker[0] - self.width // 2
+            top2Y = attacker[1] - self.height // 2
+            bottom2Y = attacker[1] + self.height // 2
+            if leftX <= right2X - self.width//2 and rightX >= left2X + self.width // 2 and bottomY >= top2Y + self.height // 2 and topY <= bottom2Y and app.action == "Slide" and not self.touching:
+                attacker[2] = True
+                return
+                
+        # Case 2 Batarang 
+        for batarang in app.batarangs.curBatarangs:
+            for attacker in self.attackers[:]:
+                rightX = batarang[0] + app.batarangs.width//2
+                leftX = batarang[0] - app.batarangs.width//2
+                topY =  batarang[1] - app.batarangs.height//2
+                bottomY = batarang[1] + app.batarangs.height//2
+
+                right2X = attacker[0] + self.width // 2
+                left2X = attacker[0] - self.width // 2
+                top2Y = attacker[1] - self.height // 2
+                bottom2Y = attacker[1] + self.height // 2
+
+
+                if leftX <= right2X - app.batarangs.width//2 and rightX >= left2X + app.batarangs.width//2 and bottomY >= top2Y + app.batarangs.height//2 and topY <= bottom2Y and not self.touching:
+                    attacker[2] = True
+                    return
+
+
+                
+                
+        
 
 
 
     def onStep(self, app):
-        self.setWidthHeight()
         if self.steps % 120 == 0:
             self.addAttacker(app)
-        # self.moveAttacker(app)
-        self.removeAttacker(app)
-        if self.attacker1Index == 7:
-            self.attacker1Index = 0
-        else:
-            self.attacker1Index += 1
+        
+        # Update attackers' movement and remove off-screen ones
+        self.moveAttacker(app)
+        self.removeAttacker()
 
+        # Update animation frame index
+        if len(ATTACKER1_IMAGES) > 0:  # Ensure there are images to cycle through
+            if self.attacker1Index >= len(ATTACKER1_IMAGES) - 1:
+                self.attacker1Index = 0
+            else:
+                self.attacker1Index += 1
 
+        # Increment steps counter
+        self.steps += 1
+        self.touchingMainChar(app)
+        self.checkForDeath(app)
 
         
-
-
 class Quizzes:
     def __init__(self) -> None:
         self.x = 0
@@ -423,7 +483,6 @@ class collectibles:
     def addCollectible(self, app):
         if len(self.collectibles) == 0:
             myList = list(COLLECTIBLES.keys())
-            print(myList)
             thisCollectible = random.choice(myList) # Random
             self.timeFrequency = random.randint(1, 5)
             if thisCollectible == "health":
@@ -459,20 +518,18 @@ class collectibles:
             top2, bottom2 = collectible[2] - 50 // 2, collectible[2] + 5 // 2
 
             if left1 <= right2 and right1 >= left2 and top1 <= bottom2 and bottom1 >= top2:
-                print("colliding")
                 if collectible[0] == "health":
                     app.mainChar.health = 100
                 elif collectible[0] == "x2":
                     app.scoreDoubled = True # Remove this after some time passes by
                 else:
                     app.mainChar.powerUps["batarangs"] += 3
-                    app.batarangs.initialiseBatrangsArray(app)
+                    # app.batarangs.initialiseBatrangsArray(app)
                 
                 self.collectibles.remove(collectible)
 
 
     def onStep(self, app):
-        print(self.collectibles)
         self.steps += 1
         if self.steps % (self.timeFrequency * 30) == 0:
             self.addCollectible(app)
@@ -483,8 +540,9 @@ class collectibles:
         self.detectCollectible(app)
 
 
+
 class Batarang:
-    def __init__(self) -> None:
+    def __init__(self, app) -> None:
         self.x = app.mainChar.pos[0]
         self.y = app.mainChar.pos[1]
         width, height = getImageSize(COLLECTIBLES["batarangs"])
@@ -495,15 +553,18 @@ class Batarang:
 
 
     def initialiseBatrangsArray(self, app):
-        for _ in range(app.mainChar.powerUps["batarangs"]):
-            self.batarangs.append([self.x, self.y])
+        # for _ in range(app.mainChar.powerUps["batarangs"]):
+        self.batarangs = []
+        while len(self.batarangs) < app.mainChar.powerUps["batarangs"]:
+            self.batarangs.append([app.mainChar.pos[0], app.mainChar.pos[1]])
 
 
     def throwBatarang(self, app):
         
-        if len(self.curBatarangs) > 0:
+        if self.batarangs != []: #  app.mainChar.powerUps["batarangs"] > 0 and 
             app.batarangAngle = 0
             self.curBatarangs.append(self.batarangs.pop()) # + [app.batarangAngle])
+            app.mainChar.powerUps["batarangs"] -= 1
             app.throwBatarang = True
 
     def removeBatarang(self, app):
@@ -520,12 +581,12 @@ class Batarang:
 
     
     def onStep(self, app):
-        print(app.mainChar.powerUps)
-        # self.initialiseBatrangsArray(app)
+        self.initialiseBatrangsArray(app)
         self.removeBatarang(app)
         app.batarangAngle += 10
         for batarang in self.curBatarangs[:]: # if len(self.curBatarangs) >= 0
             batarang[0] += 20
+
 
 
 
