@@ -1,7 +1,13 @@
 from cmu_graphics import * 
+import sys
 from classes import * 
 from functions import *
  # import random
+
+
+def onJoyPress(app, button, joystick):
+    if button == '5':
+        sys.exit(0)
 
 BACKGROUND_IMAGE_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMUPic.png"
 CMU_RUSH_IMG_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMURUSH.png"
