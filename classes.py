@@ -1,15 +1,14 @@
 from cmu_graphics import *
-from cmu_graphics.shape_logic import loadImageFromStringReference
 from functions import *
 import random
 import math
 
 COLLECTIBLES = {"health" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\RedCross.png","x2" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\x2 Score .png", "batarangs" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\batarangs.png"}
 ATTACKER_1 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker1\tile00"
-ATTACKER1_IMAGES = [loadImageFromStringReference(f'{ATTACKER_1}{i}.png') for i in range(8)]
+ATTACKER1_IMAGES = [CMUImage(PILImage.open((f'{ATTACKER_1}{i}.png'))) for i in range(8)]
 ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker2\Idle.png"
 DEAD = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\deadAttacker\tile00"
-DEAD_ATTACKER_IMAGES = [loadImageFromStringReference(f'{DEAD}{i}.png') for i in range(4)]
+DEAD_ATTACKER_IMAGES = [CMUImage(PILImage.open((f'{DEAD}{i}.png'))) for i in range(4)]
 
 # LEVEL_1_ATTRIBUTES = {"ddy" : 1.15, "obstacleFrequency"  : 120, ""}
 
@@ -323,7 +322,7 @@ class Attacker:
     def __init__(self) -> None:
         self.animated = True
         self.attacker1Index = 0
-        self.attacker2 = loadImageFromStringReference(f'{ATTACKER_2}')
+        self.attacker2 = CMUImage(PILImage.open((f'{ATTACKER_2}')))
         self.attackers = []
         self.dead = False
         self.touching = False
