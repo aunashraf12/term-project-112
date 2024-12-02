@@ -2,13 +2,20 @@ from cmu_graphics import *
 from functions import *
 import random
 import math
+import pathlib, os
 
-COLLECTIBLES = {"health" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\RedCross.png","x2" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\x2 Score .png", "batarangs" : r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\batarangs.png"}
-ATTACKER_1 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker1\tile00"
-ATTACKER1_IMAGES = [CMUImage(PILImage.open((f'{ATTACKER_1}{i}.png'))) for i in range(8)]
-ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\attacker2\Idle.png"
-DEAD = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\deadAttacker\tile00"
-DEAD_ATTACKER_IMAGES = [CMUImage(PILImage.open((f'{DEAD}{i}.png'))) for i in range(4)]
+
+def openImage(fileName):
+    return PILImage.open(os.path.join(pathlib.Path(__file__).parent,fileName))
+
+COLLECTIBLES = {"health" : "./Images/RedCross.png","x2" : "./Images/x2 Score .png", "batarangs" : "./Images/batarangs.png"}
+
+
+ATTACKER_1 = "./Images/attacker1/tile00"
+ATTACKER1_IMAGES = [CMUImage(openImage((f'{ATTACKER_1}{i}.png'))) for i in range(8)]
+ATTACKER_2 = "./Images/attacker2/Idle.png"
+DEAD = "./Images/deadAttacker/tile00"
+DEAD_ATTACKER_IMAGES = [CMUImage(openImage((f'{DEAD}{i}.png'))) for i in range(4)]
 
 # LEVEL_1_ATTRIBUTES = {"ddy" : 1.15, "obstacleFrequency"  : 120, ""}
 
