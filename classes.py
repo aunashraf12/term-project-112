@@ -386,10 +386,10 @@ class Attacker:
             if leftX <= right2X - self.width//2 and rightX >= left2X + self.width // 2 and bottomY >= top2Y + self.height // 2 and topY <= bottom2Y and app.action != "Slide" and not self.touching and attacker[2] != True:
                 print("colliding")
                 app.mainChar.health -= 25 if attacker[-1] == True else 20
-                app.mainChar.startBlinking()
                 self.touching = True
                 return True
             elif self.touching == True and leftX > right2X or rightX < left2X or bottomY < top2Y or topY > bottom2Y: # Reverse of the above condition
+                
                 self.touching = False
                 return False
                 
@@ -557,7 +557,6 @@ class Quizzes:
                 if abs(quiz[0] - rightX) <= self.r - 2:
                     # print("collison")
                     app.mainChar.health -= 10
-                    app.mainChar.startBlinking()
                     self.quizzes.remove(quiz)
                     return True
                 
@@ -774,45 +773,14 @@ class Frames:
                                windowXSpacing):
                     drawRect(x, y, windowWidth, windowHeight, fill='yellow')
 
+# Initialize the Frames object
 
 
 
-class DeanPower:
-    def __init__(self) -> None:
-        self.steps = 0
+        
+            
 
-    def draw(self, app):
-        drawRect(10, 40, 100, 10, fill=None, border='black')
-        drawRect(10, 40, app.bonusMeter, 10, fill='gold') if app.bonusMeter > 0 else None
-        if app.deanTrickActive:
-            drawLabel("DEAN TRICK ACTIVATED!", app.width/2, 50, size=20, fill='red')
-
-        if app.deanTrickReady:
-                drawLabel("Press 'D' for DEAN Trick!", app.width / 2, 30, size=20, fill="green")
-
-    def onStep(self, app):
-        self.steps += 1
-        if app.difficulty == "Hard" and not app.deanTrickActive and self.steps % 60 == 0:
-            app.bonusMeter = min(app.bonusMeter + 10, 100)
-            if app.bonusMeter >= 100:
-                app.deanTrickReady = True
-                app.bonusMeter = 100
-
-
-        if app.deanTrickActive:
-            app.deanTrickTimer += 1
-            if app.deanTrickTimer <= 120:  # 2 seconds at 60 FPS
-                app.poles.poles.clear()
-                app.quizzes.quizzes.clear()
-                app.attacker.attackers.clear()
-                app.boulder.boulders.clear()
-                app.pivots.pivots.clear()
-            else:
-                app.deanTrickActive = False  # End the DEAN Trick
-                app.deanTrickReady = False  # Reset readiness
-                app.deanTrickActive = False
-
-
+            
 
 
 
