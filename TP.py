@@ -56,7 +56,7 @@ LEVEL_ATTRIBUTES = {
 
 def onAppStart(app):
     print("started")
-    app.difficulty = "Free Play"
+    app.difficulty = "Hard"
     app.fillColour1 = None
     app.fillColour2 = None
     app.fillColour3 = None
@@ -159,6 +159,12 @@ def reset(app):
     app.poleTimer = 0
     app.stepMode = False
     app.gameOver = False
+    app.bonusMeter = 0
+    app.deanTrickReady = False
+    app.deanTrickActive = False
+    app.deanTrickTimer = 0
+    app.deanPower = DeanPower()
+
 
 
 def game_onAppStart(app):
@@ -172,9 +178,11 @@ def game_onKeyPress(app, key):
         reset(app)
     
     if app.paused == False:
-        if key == "d":
-            # print(app.poles.poles)
-            print(app.quizzes.quizzes)
+        if app.deanTrickReady and key == "d":  # Activate DEAN Trick
+            app.deanTrickActive = True
+            app.deanTrickReady = False
+            app.deanTrickTimer = 0  # Start the timer
+            app.bonusMeter = 0  # Reset the bonus meter
         if key == "up" and not app.sliding:
             app.jumpCount += 1
             if app.jumpCount <= 2:
@@ -246,6 +254,8 @@ def game_redrawAll(app):
         app.attacker.draw()
         if app.difficulty != "Easy":
             app.boulder.draw()
+        if app.difficulty == "Hard":
+            app.deanPower.draw(app)
 
 
     else:
@@ -286,6 +296,9 @@ def game_onStep(app):
             app.pivots.onStep(app)
             if app.difficulty != "Easy":
                 app.boulder.onStep(app)
+
+            if app.difficulty == "Hard":
+                app.deanPower.onStep(app)
 
 
         if app.steps % 20 == 0:
