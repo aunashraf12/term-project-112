@@ -56,7 +56,7 @@ LEVEL_ATTRIBUTES = {
 
 def onAppStart(app):
     print("started")
-    app.difficulty = "Hard"
+    app.difficulty = "Free Play"
     app.fillColour1 = None
     app.fillColour2 = None
     app.fillColour3 = None
@@ -237,7 +237,6 @@ def game_redrawAll(app):
         drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
         drawLabel(f"Score : {app.score}", 50, 55, size=20)
         app.mainChar.draw(app)
-        drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
         app.poles.drawPole(app)
         app.quizzes.draw(app)
         app.pivots.drawPivot(app)

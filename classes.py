@@ -28,6 +28,8 @@ class MainChar:
         self.ddy = 1.25
         self.pos = [200, self.ground - self.height/2]
         self.finalPosY = self.y - 50 # The y position after the jump is made
+        self.blinking = False
+
         # self.collisions = 
         self.powerUps = {"x2": 0, "batarangs":0}
         self.slide = False
@@ -41,6 +43,8 @@ class MainChar:
         drawLabel("Health Bar", 10, 8, align="top-left")
         drawRect(10, 20, 100, 5, fill=None, border="black")
         drawRect(10, 20, self.health, 5, fill="red") if self.health > 0 else drawRect(10, 20, 100, 5, fill="red", opacity=0)
+        if not self.blinking or (self.blinkTimer // 5) % 2 == 0:  # Blink every 5 frames
+            drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
 
 
     def jump(self, app):
@@ -115,6 +119,11 @@ class MainChar:
             pass
 
 
+    def startBlinking(self):
+            """Start the blinking effect."""
+            self.blinking = True
+            self.blinkTimer = 0
+
 
     def onStep(self, app):
         # self.gravity(app)
@@ -135,6 +144,14 @@ class MainChar:
 
         self.width = app.mainSpriteWidth/6 # As the sprites switch between running, sliding etc.
         self.height = app.mainSpriteHeight/6
+
+        if self.blinking:
+            self.blinkTimer += 1
+            if self.blinkTimer >= 30:  # Blink for 30 frames
+                self.blinking = False
+                self.blinkTimer = 0
+
+        
 
 
 class Poles:
@@ -480,7 +497,7 @@ class Boulder:
                 self.touching = True
                 app.mainChar.health -= 15
                 print("colliding with box")
-                # app.mainChar.startBlinking()  # Trigger blinking
+                app.mainChar.startBlinking()  # Trigger blinking
                 # self.boulders.remove(boulder)  # Remove the boulder after collision
             elif (playerRight < boulderLeft or playerLeft >= boulderRight or
                 playerBottom <= boulderTop or playerTop >= boulderBottom):
