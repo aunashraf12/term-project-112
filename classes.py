@@ -304,7 +304,7 @@ class swingingPivot:
                 return
 
             # Update player position
-            app.mainChar.pos[0] = self.pivotX + self.length * math.sin(self.angle)
+            # app.mainChar.pos[0] = self.pivotX + self.length * math.sin(self.angle)
             app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
 
     def draw(self):
