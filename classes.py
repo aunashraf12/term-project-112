@@ -11,22 +11,21 @@ ATTACKER_2 = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112
 DEAD = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\term-project-112\Images\deadAttacker\tile00"
 DEAD_ATTACKER_IMAGES = [loadImageFromStringReference(f'{DEAD}{i}.png') for i in range(4)]
 
+# LEVEL_1_ATTRIBUTES = {"ddy" : 1.15, "obstacleFrequency"  : 120, ""}
+
 
 class MainChar:
     def __init__(self, app) -> None:
         self.steps = 0
         self.timer = 0
-        self.width = 50 # Width of app is 764
-        self.height = 50 # height of app is around 400
         self.width = app.mainSpriteWidth/6
         self.height = app.mainSpriteHeight/6
         self.ground = 390
-        self.velocity = [0, 0]
         self.x = 200
         self.y = self.ground - self.height/2
         self.dx = 0
         self.dy = 0
-        self.ddy = 1
+        self.ddy = 1.25
         self.pos = [200, self.ground - self.height/2]
         self.finalPosY = self.y - 50 # The y position after the jump is made
         # self.collisions = 
@@ -49,7 +48,7 @@ class MainChar:
         # if not app.poles.checkIllegalColliding(app) == (False, "bottom"):
         app.animation = "Jump"
         if app.jumpCount == 1:
-            app.mainChar.dy = -15
+            app.mainChar.dy = -17
         if app.jumpCount == 2:
             app.mainChar.dy = -20
         app.jumping = True
@@ -60,22 +59,30 @@ class MainChar:
                            "left": False}
         
         # The amount the character wil move in one frame
-        frameMovement = (movement[0] + self.velocity[0], movement[1] + 
-                         self.velocity[1])
+        # frameMovement = (movement[0] + self.velocity[0], movement[1] + 
+        #                  self.velocity[1])
 
         # self.pos[0] += frameMovement[0]
 
-        self.dy += self.ddy
-        self.pos[1] += self.dy
+        if self.hover == False:
+            self.dy += self.ddy  # Gravity
+            self.pos[1] += self.dy  # Vertical movement
+        else:
+            self.dy += 0.15 * self.ddy  # 1/4 th Gravity for hovering
+            self.pos[1] += self.dy  # Vertical movement
 
         if self.pos[1] + self.height//2 >= self.ground:
             self.pos[1] = self.ground - self.width//2
             self.dy = 0
 
-        
-        
-
         app.frames.scrollRight()
+
+       
+
+        # Check for collision with poles
+        if app.poles.checkForMainChar(app):
+            self.grounded(app)  # Reset jump count if on a pole
+
 
         for pole in app.poles.poles:
             if app.mainChar.pos[0] + app.mainChar.width // 2  >= pole[0]:         # Checking for collision with poles downwards
@@ -84,7 +91,8 @@ class MainChar:
                         self.collisions["down"] = True
 
     
-        # self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
+        # # self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
+
         if self.collisions['down']:
             self.dy = 0
 
@@ -107,16 +115,6 @@ class MainChar:
             pass
 
 
-    def throw(self, app):
-        # if mainChar.batarangs >= 0: # Check this in on key press
-        # Batarang(app)
-        drawLine(app.mainCharX, app.mainCharHeight / 4, app.mainCharX, 3 * app.mainCharHeight / 4) # Rotate this as well
-
-
-    def collecting(app):
-        pass
-        # if app.mainChar touching any powerups:
-        #     app.mainChar.addPowerUp() # Class method
 
     def onStep(self, app):
         # self.gravity(app)
@@ -134,6 +132,9 @@ class MainChar:
                 self.pos[1] = app.poles.poles[0][1] - self.height // 2
             elif self.pos[1] + self.height // 2 - (app.poles.poles[0][1] + app.poles.height) <= self.height:
                 self.pos[1] = app.poles.poles[0][1] + app.poles.height + self.height // 2 + 1
+
+        self.width = app.mainSpriteWidth/6 # As the sprites switch between running, sliding etc.
+        self.height = app.mainSpriteHeight/6
 
 
 class Poles:
@@ -156,7 +157,7 @@ class Poles:
 
     def animatePole(self, app):
         for pole in self.poles:
-            pole[0] -= 8
+            pole[0] -= app.obstacleSpeed
 
     def removePole(self, app):
         for pole in self.poles[:]:
@@ -167,9 +168,7 @@ class Poles:
 
     def onStep(self, app):
         app.poleTimer += 1
-        # print(self.poles)
-        if app.poleTimer % 120 == 0:
-            # print("generated", app.poleTimer)    
+        if app.poleTimer % app.obstacleFrequency == 0:
             app.poles.addPole(app)
 
         app.poles.animatePole(app)
@@ -181,16 +180,41 @@ class Poles:
             app.gameOver = True
 
 
-        
-
-
     def checkForMainChar(self, app):
         for pole in self.poles:
-            if app.mainChar.pos[0] + app.mainChar.width//2 >= pole[0] and app.mainChar.pos[0] - app.mainChar.width // 2 <= pole[0] + pole[2] and app.mainChar.y + app.mainChar.height // 2 <= pole[1]:
-                app.poleBelow = True
-                app.curPolY = pole[1]
-            else:
-                app.poleBelow = False
+            # Pole boundaries
+            poleLeft = pole[0]
+            poleRight = pole[0] + pole[2]
+            poleTop = pole[1]
+            poleBottom = pole[1] + self.height
+
+            # Player boundaries
+            playerLeft = app.mainChar.pos[0] - app.mainChar.width // 2
+            playerRight = app.mainChar.pos[0] + app.mainChar.width // 2
+            playerTop = app.mainChar.pos[1] - app.mainChar.height // 2
+            playerBottom = app.mainChar.pos[1] + app.mainChar.height // 2
+
+            # Check vertical collision (landing on a pole)
+            if playerBottom >= poleTop and playerTop <= poleTop:
+                if playerRight > poleLeft and playerLeft < poleRight:
+                    app.mainChar.dy = 0  # Stop downward movement
+                    app.mainChar.pos[1] = poleTop - app.mainChar.height // 2  # Align player on top of the pole
+                    app.mainChar.grounded(app)
+                    return True
+
+            # Check horizontal collision (sideways movement into a pole)
+            if playerRight > poleLeft and playerLeft < poleRight:
+                if playerBottom > poleTop and playerTop < poleBottom:
+                    # Push player to the left or right of the pole
+                    if playerLeft < poleLeft:  # Colliding from the left
+                        app.mainChar.pos[0] = poleLeft - app.mainChar.width // 2
+                    elif playerRight > poleRight:  # Colliding from the right
+                        app.mainChar.pos[0] = poleRight + app.mainChar.width // 2
+                    app.mainChar.dx = 0  # Stop horizontal movement
+                    return True
+
+        return False
+
 
 
 class pivots:
@@ -322,7 +346,7 @@ class Attacker:
     def moveAttacker(self, app):
         for attacker in self.attackers:
             if attacker[1] == app.mainChar.ground - self.height / 2:  # If on ground
-                attacker[0] -= 10
+                attacker[0] -= app.attackerSpeed
             elif app.poles.poles:  # Ensure poles exist before accessing
                 pole = app.poles.poles[0]
                 attacker[0] = pole[0] + pole[2] // 2  # Stay on the middle of the pole
@@ -389,14 +413,8 @@ class Attacker:
                     return
 
 
-                
-                
-        
-
-
-
     def onStep(self, app):
-        if self.steps % 120 == 0:
+        if self.steps % app.attackerFrequency == 0:
             self.addAttacker(app)
         
         # Update attackers' movement and remove off-screen ones
@@ -414,6 +432,77 @@ class Attacker:
         self.steps += 1
         self.touchingMainChar(app)
         self.checkForDeath(app)
+
+
+
+
+# Only in level 2        
+class Boulder:
+    def __init__(self):
+        self.boulders = []  # Each boulder is [x, y, width, height]
+        self.steps = 0
+        self.touching = False
+
+    def addBoulder(self, app):
+        # Randomize position: ground or 200 pixels above
+        x = app.width + 5
+        y = app.mainChar.ground - 25 if random.choice([1, 2]) == 1 else app.mainChar.ground - 95
+        self.boulders.append([x, y, 100, 50]) if len(self.boulders) <= 1 else [] # [x, y, width, height]
+
+    def draw(self):
+        for boulder in self.boulders:
+            drawRect(boulder[0], boulder[1], boulder[2], boulder[3], fill="grey", border="black", align="center")
+
+    def remove(self):
+        for boulder in self.boulders[:]:
+            if boulder[0] + boulder[2] < 0:
+                self.boulders.remove(boulder) 
+
+    
+
+    def checkCollision(self, app):
+        """Check for collision with the main character."""
+        for boulder in self.boulders:
+            boulderWidth, boulderHeight = boulder[2], boulder[3]
+            boulderLeft, boulderTop = boulder[0] - boulderWidth // 2, boulder[1] - boulderHeight // 2
+            boulderRight, boulderBottom = boulder[0] + boulderWidth // 2, boulder[1] + boulderHeight // 2
+
+            playerLeft = app.mainChar.pos[0] - app.mainChar.width // 2
+            playerRight = app.mainChar.pos[0] + app.mainChar.width // 2
+            playerTop = app.mainChar.pos[1] - app.mainChar.height // 2
+            playerBottom = app.mainChar.pos[1] + app.mainChar.height // 2
+
+            # Collision detection
+            if (playerRight >= boulderLeft and playerLeft <= boulderRight and
+                playerBottom >= boulderTop and playerTop <= boulderBottom and 
+                self.touching == False):
+                print((playerRight, boulderLeft), (playerLeft, boulderRight), (playerBottom, boulderTop), (playerTop, boulderBottom))
+                self.touching = True
+                app.mainChar.health -= 15
+                print("colliding with box")
+                # app.mainChar.startBlinking()  # Trigger blinking
+                # self.boulders.remove(boulder)  # Remove the boulder after collision
+            elif (playerRight < boulderLeft or playerLeft >= boulderRight or
+                playerBottom <= boulderTop or playerTop >= boulderBottom):
+                self.touching = False
+            
+
+    def onStep(self, app):
+        self.checkCollision(app)
+        self.steps += 1
+        if self.steps % app.obstacleFrequency == 0:
+            self.addBoulder(app)
+
+        # Move boulders to the left
+        for boulder in self.boulders:
+            boulder[0] -= app.obstacleSpeed
+
+        # Remove off-screen boulders
+        self.boulders = [boulder for boulder in self.boulders if boulder[0] + boulder[2] > 0]
+
+    
+
+
 
         
 class Quizzes:
@@ -448,7 +537,7 @@ class Quizzes:
             if quiz[1] - self.r > bottomY or quiz[1] + self.r < topY:
                 return False
             else:
-                if abs(quiz[0] - rightX) <= self.r:
+                if abs(quiz[0] - rightX) <= self.r - 2:
                     # print("collison")
                     app.mainChar.health -= 10
                     self.quizzes.remove(quiz)
@@ -458,20 +547,15 @@ class Quizzes:
     
     def onStep(self, app):
         self.steps += 1
-        if self.steps % 120 == 0:
+        if self.steps % app.obstacleFrequency == 0:
             self.add(app)
         for quiz in self.quizzes:
-            quiz[0] -= 15
+            quiz[0] -= app.obstacleSpeed + 3
 
         self.removeQuiz(app)
         self.touchingMainChar(app)
 
 
-class Enemy:
-    def __init__(self) -> None:
-        self.width, self.height = 0 , 0
-        self.x = app.width
-        self.y = app.mainChar.ground - self.height / 2
 
 
 class collectibles:
@@ -531,7 +615,7 @@ class collectibles:
 
     def onStep(self, app):
         self.steps += 1
-        if self.steps % (self.timeFrequency * 30) == 0:
+        if self.steps % (app.collectibleFrequency) == 0:
             self.addCollectible(app)
 
         

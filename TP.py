@@ -6,13 +6,57 @@ from functions import *
 BACKGROUND_IMAGE_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMUPic.png"
 CMU_RUSH_IMG_URL = r"D:\CMUQ\Fundamentals_of_Programming\Term_Project\112-term-project\Images\CMURUSH.png"
 
+LEVEL_ATTRIBUTES = {
+    "Easy": {
+        "ddy": 1.15,
+        "obstacleFrequency": 120,
+        "bonusMeterEnabled": False,
+        "obstacleSpeed": 8,
+        "attackerSpeed" : 20,
+        "attackerFrequency": 120,
+        "collectibleFrequency" : 180,
+        "bonusDuration": None
+    },
+    "Medium": {
+        "ddy": 1.2,
+        "obstacleFrequency": 100,
+        "bonusMeterEnabled": True,
+        "obstacleSpeed": 10,
+        "attackerSpeed" : 20,
+        "attackerFrequency": 100,
+        "collectibleFrequency" : 360,
+        "bonusDuration": 120
+    },
+    "Hard": {
+        "ddy": 1.25,
+        "obstacleFrequency": 80,
+        "bonusMeterEnabled": True,
+        "obstacleSpeed": 12,
+        "attackerSpeed" : 20,
+        "attackerFrequency": 80,
+        "collectibleFrequency" : 400,
+        "bonusDuration": 120
+    },
+    "Free Play": {
+        "ddy": 1.15,
+        "obstacleFrequency": 100,
+        "bonusMeterEnabled": False,
+        "attackerSpeed" : 20,
+        "obstacleSpeed": 9,
+        "attackerFrequency": 120,
+        "collectibleFrequency" : 180,
+        "bonusDuration": None
+    }
+}
+
 
 #############
 # Main Menu
 ##################
 
-def main_onAppStart(app):
+def onAppStart(app):
     print("started")
+    app.difficulty = "Hard"
     app.fillColour1 = None
     app.fillColour2 = None
     app.fillColour3 = None
@@ -78,6 +122,16 @@ def main_onKeyPress(app, key):
 
 
 def reset(app):
+    levelConfig = LEVEL_ATTRIBUTES[app.difficulty]
+    app.ddy = levelConfig["ddy"]
+    app.obstacleFrequency = levelConfig["obstacleFrequency"]
+    app.bonusMeterEnabled = levelConfig["bonusMeterEnabled"]
+    app.obstacleSpeed = levelConfig["obstacleSpeed"]
+    app.attackerSpeed = levelConfig["attackerSpeed"]
+    app.attackerFrequency = levelConfig["attackerFrequency"]
+    app.collectibleFrequency = levelConfig["collectibleFrequency"]
+    app.bonusDuration = levelConfig["bonusDuration"]
+
     app.scrollX = 0
     app.steps = 0
     app.score = 0
@@ -95,6 +149,7 @@ def reset(app):
     app.poles = Poles()
     app.quizzes = Quizzes()
     app.collectibles = collectibles()
+    app.boulder = Boulder()
     app.batarangAngle = 0
     app.batarangs = Batarang(app)
     app.frames = Frames()
@@ -190,6 +245,8 @@ def game_redrawAll(app):
         app.batarangs.drawBatarangs(app)
         app.batarangs.drawBatarangCount(app)
         app.attacker.draw()
+        if app.difficulty != "Easy":
+            app.boulder.draw()
 
 
     else:
@@ -228,6 +285,8 @@ def game_onStep(app):
             app.batarangs.onStep(app)
             app.swingingPivots.onStep(app)
             app.pivots.onStep(app)
+            if app.difficulty != "Easy":
+                app.boulder.onStep(app)
 
 
         if app.steps % 20 == 0:
