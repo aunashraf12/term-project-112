@@ -2,6 +2,7 @@ from cmu_graphics import *
 import sys
 from classes import * 
 from functions import *
+from joystick import *
  # import random
 
 
@@ -9,7 +10,9 @@ def onJoyPress(app, button, joystick):
     if button == '5':
         sys.exit(0)
 
-CMU_RUSH_IMG_URL = "./Images/CMURUSH.png"
+GAME_OVER_MUSIC = Sound("./gameOverMusic.mp3")
+MENU_MUSIC = Sound("./menuMusic.mp3")
+GAME_MUSIC = Sound("./gameMusic.mp3")
 
 LEVEL_ATTRIBUTES = {
     "Easy": {
@@ -60,7 +63,6 @@ LEVEL_ATTRIBUTES = {
 ##################
 
 def onAppStart(app):
-    print("started")
     app.difficulty = "Hard"
     app.steps = 0
     app.progress = 0
@@ -76,28 +78,23 @@ def onAppStart(app):
         app.highScore = f.readline()
 
 def main_onAppStart(app):
+    MENU_MUSIC.play(loop=True)
     with open('./High Score.txt') as f:
         app.highScore = f.readline()
 
 def main_redrawAll(app):
-    # if app.showTutorial:
-    #     pass
-    # elif app.showChallengeOptions:
-    #     pass
-    # else:
-    # Gradient background
-
     
-
     for i in range(0, app.height, 5):
         color = rgb(135 - i // 10, 206 - i // 15, 250 - i // 20)  # Sky blue gradient
         drawRect(0, i, app.width, 5, fill=color)
     
     # Game title
-    drawLabel("CMU RUSH", app.width / 2, app.height / 6, size=40, fill="darkBlue", bold=True)
+    drawLabel("CMU RUSH", app.width / 2, app.height / 6, size=40, fill="darkBlue",
+               bold=True)
 
     # High Score
-    drawLabel(f"High Score : {app.highScore}", app.width / 2, app.height / 3, size=25)
+    drawLabel(f"High Score : {app.highScore}", app.width / 2, app.height / 3, 
+              size=25)
 
 
     # Buttons
@@ -113,33 +110,44 @@ def main_redrawAll(app):
         drawLabel(text, x, y, size=20, fill="black", bold=True)
 
     # Footer
-    drawLabel("Hover over buttons to highlight, click to select!", app.width / 2, app.height - 20, size=12, fill="darkGray")
+    drawLabel("Hover over buttons to highlight, click to select!", app.width / 2,
+               app.height - 20, size=12, fill="darkGray")
 
     if app.loading:  # Show loading screen
         drawRect(0, 0, app.width, app.height, fill="green")
 
         # Loading title
-        drawLabel("Get Ready for Freeplay!", app.width / 2, app.height / 4, size=30, fill="white", bold=True)
+        drawLabel("Get Ready for Freeplay!", app.width / 2, app.height / 4,
+                   size=30, fill="white", bold=True)
 
         # Theme message
-        drawLabel("Strive to survive as long as you can.", app.width / 2, app.height / 3, size=20, fill="lightGray")
-        drawLabel("Be careful about your health!", app.width / 2, app.height / 3 + 30, size=20, fill="lightGray")
+        drawLabel("Strive to survive as long as you can.", app.width / 2,
+                   app.height / 3, size=20, fill="lightGray")
+        drawLabel("Be careful about your health!", app.width / 2, 
+                  app.height / 3 + 30, size=20, fill="lightGray")
 
         # Progress Bar
         
         barWidth = app.progress * 300
-        drawRect(app.width / 2 , app.height / 2, 300, 20, fill="gray", border="white", align="center")
-        drawRect(app.width / 2 , app.height / 2, barWidth + 0.1, 20, fill="lightGreen", align="center")
+        drawRect(app.width / 2 , app.height / 2, 300, 20, fill="gray", 
+                 border="white", align="center")
+        drawRect(app.width / 2 , app.height / 2, barWidth + 0.1, 20, 
+                 fill="lightGreen", align="center")
 
         
 def main_onMouseMove(app, mouseX, mouseY):
     # Determine hover effect
     button_positions = [
-        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, app.height / 3 + 20),
-        (app.width / 2 - 100, app.height / 3 + 30, app.width / 2 + 100, app.height / 3 + 70),
-        (app.width / 2 - 100, app.height / 3 + 80, app.width / 2 + 100, app.height / 3 + 120),
-        (app.width / 2 - 100, app.height / 3 + 130, app.width / 2 + 100, app.height / 3 + 170),
-        (app.width / 2 - 100, app.height / 3 + 180, app.width / 2 + 100, app.height / 3 + 220),
+        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, 
+         app.height / 3 + 20),
+        (app.width / 2 - 100, app.height / 3 + 30, app.width / 2 + 100, 
+         app.height / 3 + 70),
+        (app.width / 2 - 100, app.height / 3 + 80, app.width / 2 + 100, 
+         app.height / 3 + 120),
+        (app.width / 2 - 100, app.height / 3 + 130, app.width / 2 + 100, 
+         app.height / 3 + 170),
+        (app.width / 2 - 100, app.height / 3 + 180, app.width / 2 + 100, 
+         app.height / 3 + 220),
     ]
     fills = ["lightGray", "lightGray", "lightGray", "lightGray", "lightGray"]
     for i, (x1, y1, x2, y2) in enumerate(button_positions):
@@ -152,11 +160,16 @@ def main_onMouseMove(app, mouseX, mouseY):
 def main_onMousePress(app, mouseX, mouseY):
     # Button actions
     button_positions = [
-        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, app.height / 3 + 20, "highScore"),
-        (app.width / 2 - 100, app.height / 3 + 30, app.width / 2 + 100, app.height / 3 + 70, "freePlay"),
-        (app.width / 2 - 100, app.height / 3 + 80, app.width / 2 + 100, app.height / 3 + 120, "challengeMode"),
-        (app.width / 2 - 100, app.height / 3 + 130, app.width / 2 + 100, app.height / 3 + 170, "instructions"),
-        (app.width / 2 - 100, app.height / 3 + 180, app.width / 2 + 100, app.height / 3 + 220, "quit"),
+        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, 
+         app.height / 3 + 20, "highScore"),
+        (app.width / 2 - 100, app.height / 3 + 30, app.width / 2 + 100, 
+         app.height / 3 + 70, "freePlay"),
+        (app.width / 2 - 100, app.height / 3 + 80, app.width / 2 + 100, 
+         app.height / 3 + 120, "challengeMode"),
+        (app.width / 2 - 100, app.height / 3 + 130, app.width / 2 + 100, 
+         app.height / 3 + 170, "instructions"),
+        (app.width / 2 - 100, app.height / 3 + 180, app.width / 2 + 100,
+          app.height / 3 + 220, "quit"),
     ]
     for x1, y1, x2, y2, action in button_positions:
         if x1 <= mouseX <= x2 and y1 <= mouseY <= y2:
@@ -169,10 +182,8 @@ def main_onMousePress(app, mouseX, mouseY):
             elif action == "challengeMode":
                 app.showChallengeOptions = True
                 setActiveScreen("challengeModes")
-                print("Challenge Mode selected.")
             elif action == "instructions":
                 setActiveScreen("instructions")
-                print("Instructions selected.")
             elif action == "quit":
                 exit()
 
@@ -191,6 +202,7 @@ def main_onStep(app):
         app.progress = min((app.steps - app.loadingStartTime) / 240, 1)  # 240 steps = 4 seconds
         if app.progress >= 1:  # Loading complete
                 app.loading = False
+                MENU_MUSIC.pause()
                 setActiveScreen('game')  # Start Freeplay mode
 
 
@@ -200,7 +212,8 @@ def instructions_redrawAll(app):
     drawRect(0, 0, app.width, app.height, fill="lightBlue")
 
     # Title
-    drawLabel("Instructions", app.width / 2, app.height / 8, size=30, fill="darkBlue", bold=True)
+    drawLabel("Instructions", app.width / 2, app.height / 8, size=30, 
+              fill="darkBlue", bold=True)
 
     # Instructions Text
     instructions = [
@@ -213,16 +226,20 @@ def instructions_redrawAll(app):
         "7. Try to dodge the grey rectangles and the bullets."
     ]
     for i, line in enumerate(instructions):
-        drawLabel(line, app.width / 2, app.height / 4 + i * 30, size=18, fill="black")
+        drawLabel(line, app.width / 2, app.height / 4 + i * 30, size=18, 
+                  fill="black")
 
     # Back Button
-    drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray", border="black", align="center")
-    drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, fill="black")
+    drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray",
+              border="black", align="center")
+    drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, 
+              fill="black")
 
 
 def instructions_onMousePress(app, mouseX, mouseY):
     # Check if the "Back to Menu" button is clicked
-    if app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and app.height - 100 - 20 <= mouseY <= app.height - 100 + 20:
+    if (app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and 
+        app.height - 100 - 20 <= mouseY <= app.height - 100 + 20):
         setActiveScreen("main")
 
 
@@ -233,7 +250,8 @@ def challengeModes_redrawAll(app):
     drawRect(0, 0, app.width, app.height, fill="lightGreen")
 
     # Title
-    drawLabel("Challenge Modes", app.width / 2, app.height / 8, size=30, fill="darkGreen", bold=True)
+    drawLabel("Challenge Modes", app.width / 2, app.height / 8, size=30, 
+              fill="darkGreen", bold=True)
 
     # Difficulty Buttons
     button_specs = [
@@ -246,14 +264,17 @@ def challengeModes_redrawAll(app):
         drawLabel(text, x, y, size=20, fill="black")
 
     # Back Button
-    drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray", border="black", align="center")
-    drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, fill="black")
+    drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray", 
+             border="black", align="center")
+    drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, 
+              fill="black")
 
     if app.loading:
         drawRect(0, 0, app.width, app.height, fill="green")
 
         # Loading title
-        drawLabel(f"Get Ready for {app.selectedDifficulty} Mode!", app.width / 2, app.height / 4, size=30, fill="white", bold=True)
+        drawLabel(f"Get Ready for {app.selectedDifficulty} Mode!", app.width / 2, 
+                  app.height / 4, size=30, fill="white", bold=True)
 
         # Display the theme message based on the selected mode
         if app.selectedDifficulty == "Easy":
@@ -266,13 +287,16 @@ def challengeModes_redrawAll(app):
             theme_message = []
 
         for i, line in enumerate(theme_message):
-            drawLabel(line, app.width / 2, app.height / 3 + i * 30, size=20, fill="lightGray")
+            drawLabel(line, app.width / 2, app.height / 3 + i * 30, size=20, 
+                      fill="lightGray")
 
 
         
         barWidth = app.progress * 300
-        drawRect(app.width / 2, app.height / 2, 300, 20, fill="gray", border="white", align="center")
-        drawRect(app.width / 2, app.height / 2, barWidth + 0.1, 20, fill="lightGreen", align="center")
+        drawRect(app.width / 2, app.height / 2, 300, 20, fill="gray", 
+                 border="white", align="center")
+        drawRect(app.width / 2, app.height / 2, barWidth + 0.1, 20, 
+                 fill="lightGreen", align="center")
 
         
 
@@ -280,9 +304,12 @@ def challengeModes_redrawAll(app):
 def challengeModes_onMouseMove(app, mouseX, mouseY):
     # Highlight difficulty buttons on hover
     button_positions = [
-        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, app.height / 3 + 20),
-        (app.width / 2 - 100, app.height / 3 + 40, app.width / 2 + 100, app.height / 3 + 80),
-        (app.width / 2 - 100, app.height / 3 + 100, app.width / 2 + 100, app.height / 3 + 140)
+        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, 
+         app.height / 3 + 20),
+        (app.width / 2 - 100, app.height / 3 + 40, app.width / 2 + 100, 
+         app.height / 3 + 80),
+        (app.width / 2 - 100, app.height / 3 + 100, app.width / 2 + 100, 
+         app.height / 3 + 140)
     ]
     fills = ["lightGray", "lightGray", "lightGray"]
     for i, (x1, y1, x2, y2) in enumerate(button_positions):
@@ -296,9 +323,12 @@ def challengeModes_onMouseMove(app, mouseX, mouseY):
 def challengeModes_onMousePress(app, mouseX, mouseY):
     # Button actions
     button_positions = [
-        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, app.height / 3 + 20, "Easy"),
-        (app.width / 2 - 100, app.height / 3 + 40, app.width / 2 + 100, app.height / 3 + 80, "Medium"),
-        (app.width / 2 - 100, app.height / 3 + 100, app.width / 2 + 100, app.height / 3 + 140, "Hard")
+        (app.width / 2 - 100, app.height / 3 - 20, app.width / 2 + 100, 
+         app.height / 3 + 20, "Easy"),
+        (app.width / 2 - 100, app.height / 3 + 40, app.width / 2 + 100, 
+         app.height / 3 + 80, "Medium"),
+        (app.width / 2 - 100, app.height / 3 + 100, app.width / 2 + 100, 
+         app.height / 3 + 140, "Hard")
     ]
     for x1, y1, x2, y2, difficulty in button_positions:
         if x1 <= mouseX <= x2 and y1 <= mouseY <= y2:
@@ -306,12 +336,10 @@ def challengeModes_onMousePress(app, mouseX, mouseY):
             app.loadingStartTime = app.steps
             app.selectedDifficulty = difficulty  # Store selected difficulty
 
-            # app.difficulty = difficulty  # Set difficulty in the app
-            # setActiveScreen('game')  # Start the game
-            # print(f"Selected {difficulty} mode!")
 
     # Back to Menu
-    if app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and app.height - 100 - 20 <= mouseY <= app.height - 100 + 20:
+    if (app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and
+         app.height - 100 - 20 <= mouseY <= app.height - 100 + 20):
         setActiveScreen("main")
 
 def challengeModes_onStep(app):
@@ -321,6 +349,7 @@ def challengeModes_onStep(app):
         if app.progress >= 1:  # Loading complete
                 app.loading = False
                 app.difficulty = app.selectedDifficulty  # Set the game's difficulty
+                MENU_MUSIC.pause()
                 setActiveScreen('game')  # Start the game
 
 def reset(app):
@@ -333,7 +362,6 @@ def reset(app):
     app.attackerFrequency = levelConfig["attackerFrequency"]
     app.collectibleFrequency = levelConfig["collectibleFrequency"]
     app.bonusDuration = levelConfig["bonusDuration"]
-
     app.scrollX = 0
     app.steps = 0
     app.score = 0
@@ -370,7 +398,9 @@ def reset(app):
 
 def game_onAppStart(app):
     reset(app)
-    
+
+def game_onScreenActivate(app):
+    GAME_MUSIC.play(loop=True)
 
 def game_onKeyPress(app, key):
     if key == "p" or app.pauseButtonPressed == True:
@@ -423,8 +453,6 @@ def game_onKeyRelease(app, key):
             app.action = "Run"
 
 def game_redrawAll(app):
-    # if app.paused == False:
-        # drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
     app.frames.drawFrames(app)
     drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
     if app.scoreDoubled:
@@ -443,7 +471,8 @@ def game_redrawAll(app):
     if app.difficulty == "Hard":
         app.deanPower.draw(app)
 
-    drawRect(app.width - 55, 30, 90, 40, fill=app.pauseButtonFill, border="black", align="center")
+    drawRect(app.width - 55, 30, 90, 40, fill=app.pauseButtonFill, 
+             border="black", align="center")
     drawLabel("Pause", app.width - 55, 30, size=18, fill="black")
 
     if app.paused:
@@ -451,7 +480,8 @@ def game_redrawAll(app):
         drawRect(0, 0, app.width, app.height, fill="black", opacity=50)
 
         # Pause Menu Title
-        drawLabel("Game Paused", app.width / 2, app.height / 3 - 60, size=30, fill="white", bold=True)
+        drawLabel("Game Paused", app.width / 2, app.height / 3 - 60, size=30, 
+                  fill="white", bold=True)
 
         # Buttons
         button_specs = [
@@ -468,10 +498,12 @@ def game_redrawAll(app):
         drawRect(0, 0, app.width, app.height, fill="black", opacity=70)
 
         # Game Over Title
-        drawLabel("Game Over!", app.width / 2, app.height / 3 - 60, size=40, fill="red", bold=True)
+        drawLabel("Game Over!", app.width / 2, app.height / 3 - 60,
+                   size=40, fill="red", bold=True)
 
         # Final Score
-        drawLabel(f"Your Score: {app.score}", app.width / 2, app.height / 3, size=25, fill="white")
+        drawLabel(f"Your Score: {app.score}", app.width / 2, app.height / 3, 
+                  size=25, fill="white")
 
         # Buttons
         button_specs = [
@@ -503,6 +535,9 @@ def game_onStep(app):
                 app.deanPower.onStep(app)
 
         elif app.gameOver:
+            GAME_MUSIC.pause()
+            
+
             with open('High Score.txt', 'r', encoding='utf-8') as file: 
                 data = file.readlines() 
             print(data)
@@ -530,9 +565,12 @@ def game_onMouseMove(app, mouseX, mouseY):
     if app.paused:
          # Button positions for highlighting
         button_positions = [
-            (app.width / 2 - 120, app.height / 3 - 25, app.width / 2 + 120, app.height / 3 + 25),  # Resume
-            (app.width / 2 - 120, app.height / 3 + 35, app.width / 2 + 120, app.height / 3 + 85),  # Main Menu
-            (app.width / 2 - 120, app.height / 3 + 95, app.width / 2 + 120, app.height / 3 + 145),  # Quit
+            (app.width / 2 - 120, app.height / 3 - 25, 
+             app.width / 2 + 120, app.height / 3 + 25),  # Resume
+            (app.width / 2 - 120, app.height / 3 + 35, 
+             app.width / 2 + 120, app.height / 3 + 85),  # Main Menu
+            (app.width / 2 - 120, app.height / 3 + 95, 
+             app.width / 2 + 120, app.height / 3 + 145),  # Quit
         ]
         fills = ["lightGray", "lightGray", "lightGray"]
 
@@ -546,8 +584,10 @@ def game_onMouseMove(app, mouseX, mouseY):
     if app.gameOver:
         # Highlight buttons
         button_positions = [
-            (app.width / 2 - 100, app.height / 3 + 55, app.width / 2 + 100, app.height / 3 + 105),  # Retry
-            (app.width / 2 - 100, app.height / 3 + 115, app.width / 2 + 100, app.height / 3 + 165),  # Main Menu
+            (app.width / 2 - 100, app.height / 3 + 55, 
+             app.width / 2 + 100, app.height / 3 + 105),  # Retry
+            (app.width / 2 - 100, app.height / 3 + 115, 
+             app.width / 2 + 100, app.height / 3 + 165),  # Main Menu
         ]
         fills = ["lightGray", "lightGray"]
 
@@ -569,9 +609,12 @@ def game_onMousePress(app, mouseX, mouseY):
     if app.paused:
          # Button positions
         button_positions = [
-            (app.width / 2 - 120, app.height / 3 - 25, app.width / 2 + 120, app.height / 3 + 25, "resume"),
-            (app.width / 2 - 120, app.height / 3 + 35, app.width / 2 + 120, app.height / 3 + 85, "mainMenu"),
-            (app.width / 2 - 120, app.height / 3 + 95, app.width / 2 + 120, app.height / 3 + 145, "quit"),
+            (app.width / 2 - 120, app.height / 3 - 25, 
+             app.width / 2 + 120, app.height / 3 + 25, "resume"),
+            (app.width / 2 - 120, app.height / 3 + 35, 
+             app.width / 2 + 120, app.height / 3 + 85, "mainMenu"),
+            (app.width / 2 - 120, app.height / 3 + 95, 
+             app.width / 2 + 120, app.height / 3 + 145, "quit"),
         ]
 
         # Button actions
@@ -588,8 +631,10 @@ def game_onMousePress(app, mouseX, mouseY):
     if app.gameOver:
         # Button positions
         button_positions = [
-            (app.width / 2 - 100, app.height / 3 + 55, app.width / 2 + 100, app.height / 3 + 105, "retry"),
-            (app.width / 2 - 100, app.height / 3 + 115, app.width / 2 + 100, app.height / 3 + 165, "mainMenu"),
+            (app.width / 2 - 100, app.height / 3 + 55, app.width / 2 + 100, 
+             app.height / 3 + 105, "retry"),
+            (app.width / 2 - 100, app.height / 3 + 115, app.width / 2 + 100, 
+             app.height / 3 + 165, "mainMenu"),
         ]
 
         for x1, y1, x2, y2, action in button_positions:

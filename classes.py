@@ -9,8 +9,7 @@ def openImage(fileName):
     return PILImage.open(os.path.join(pathlib.Path(__file__).parent,fileName))
 
 COLLECTIBLES = {"health" : "./Images/RedCross.png","x2" : "./Images/x2 Score .png", "batarangs" : "./Images/batarangs.png"}
-
-
+GAME_OVER_MUSIC = Sound("./gameOverMusic.mp3")
 ATTACKER_1 = "./Images/attacker1/tile00"
 ATTACKER1_IMAGES = [CMUImage(openImage((f'{ATTACKER_1}{i}.png'))) for i in range(8)]
 ATTACKER_2 = "./Images/attacker2/Idle.png"
@@ -33,7 +32,6 @@ class MainChar:
         self.dy = 0
         self.ddy = 1.25
         self.pos = [200, self.ground - self.height/2]
-        self.finalPosY = self.y - 50 # The y position after the jump is made
         self.blinking = False
 
         # self.collisions = 
@@ -50,12 +48,12 @@ class MainChar:
         drawRect(10, 20, 100, 5, fill=None, border="black")
         drawRect(10, 20, self.health, 5, fill="red") if self.health > 0 else drawRect(10, 20, 100, 5, fill="red", opacity=0)
         if not self.blinking or (self.blinkTimer // 5) % 2 == 0:  # Blink every 5 frames
-            drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0], app.mainChar.pos[1], align='center', width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
+            drawImage(app.mainSpriteImages[app.mainSpriteIndex], app.mainChar.pos[0],
+                       app.mainChar.pos[1], align='center', 
+                       width=app.mainSpriteWidth/6, height=app.mainSpriteHeight/6)
 
 
     def jump(self, app):
-        # app.mainCharPosY = self.finalPosY
-        # if not app.poles.checkIllegalColliding(app) == (False, "bottom"):
         app.animation = "Jump"
         if app.jumpCount == 1:
             app.mainChar.dy = -17
@@ -68,11 +66,6 @@ class MainChar:
         self.collisions = {"up" : False, "down" : False, "right" : False, 
                            "left": False}
         
-        # The amount the character wil move in one frame
-        # frameMovement = (movement[0] + self.velocity[0], movement[1] + 
-        #                  self.velocity[1])
-
-        # self.pos[0] += frameMovement[0]
 
         if self.hover == False:
             self.dy += self.ddy  # Gravity
@@ -87,8 +80,6 @@ class MainChar:
 
         app.frames.scrollRight()
 
-       
-
         # Check for collision with poles
         if app.poles.checkForMainChar(app):
             self.grounded(app)  # Reset jump count if on a pole
@@ -97,11 +88,9 @@ class MainChar:
         for pole in app.poles.poles:
             if app.mainChar.pos[0] + app.mainChar.width // 2  >= pole[0]:         # Checking for collision with poles downwards
                 if app.mainChar.pos[0] - app.mainChar.width // 2 <= pole[0] + pole[2]: 
-                    if app.mainChar.pos[1] + app.mainChar.height // 2 >= pole[1] and app.mainChar.pos[1] - app.mainChar.height // 2 <= pole[1] + app.poles.height:
+                    if (app.mainChar.pos[1] + app.mainChar.height // 2 >= pole[1] 
+                        and app.mainChar.pos[1] - app.mainChar.height // 2 <= pole[1] + app.poles.height):
                         self.collisions["down"] = True
-
-    
-        # # self.velocity[1] = 3 if self.hover == True else 8 #min(5, self.velocity[1] + 0.1) # Gravity
 
         if self.collisions['down']:
             self.dy = 0
@@ -148,8 +137,6 @@ class MainChar:
                 self.blinkTimer = 0
 
         
-
-
 class Poles:
     def __init__(self) -> None:
         self.width = 400 # random between 300 and 500
@@ -190,7 +177,8 @@ class Poles:
         app.poles.checkForMainChar(app)
 
         if app.mainChar.health <= 0:
-            app.gameOver = True
+            app.gameOver = True 
+            GAME_OVER_MUSIC.play(loop=False)
 
 
     def checkForMainChar(self, app):
@@ -240,7 +228,8 @@ class Attacker:
 
     def setWidthHeight(self):
         if self.animated:
-            self.width, self.height = getImageSize(ATTACKER1_IMAGES[self.attacker1Index])
+            self.width, self.height = getImageSize(ATTACKER1_IMAGES
+                                                   [self.attacker1Index])
         else:
             self.width, self.height = getImageSize(self.attacker2)
 
@@ -248,7 +237,8 @@ class Attacker:
         for attacker in self.attackers:
             if attacker[2] != True:
                 if attacker[-1]:  # If animated
-                    drawImage(ATTACKER1_IMAGES[self.attacker1Index], attacker[0], attacker[1], align='center')
+                    drawImage(ATTACKER1_IMAGES[self.attacker1Index], attacker[0],
+                               attacker[1], align='center')
                 else:
                     drawImage(self.attacker2, attacker[0], attacker[1], align="center")
             else:
@@ -262,12 +252,14 @@ class Attacker:
         choice = random.choice([1, 2])
         if choice == 1:
             # Add attacker on the ground
-            self.attackers.append([app.width + 5, app.mainChar.ground - self.height / 2,False , True]) # [xPos, yPos, dead, animated]
+            self.attackers.append([app.width + 5, 
+                                   app.mainChar.ground - self.height / 2,False , True]) # [xPos, yPos, dead, animated]
         else:
             # Add attacker on the first pole if it exists
             if app.poles.poles:
                 pole = app.poles.poles[0]
-                self.attackers.append([pole[0] + pole[2] // 2, pole[1] - self.width / 2, False, False])
+                self.attackers.append([pole[0] + pole[2] // 2, 
+                                       pole[1] - self.width / 2, False, False])
 
     def moveAttacker(self, app):
         for attacker in self.attackers:
@@ -292,13 +284,20 @@ class Attacker:
             left2X = attacker[0] - self.width // 2
             top2Y = attacker[1] - self.height // 2
             bottom2Y = attacker[1] + self.height // 2
-            if leftX <= right2X - self.width//2 and rightX >= left2X + self.width // 2 and bottomY >= top2Y + self.height // 2 and topY <= bottom2Y and app.action != "Slide" and not self.touching and attacker[2] != True:
-                print("colliding")
+
+            if (leftX <= right2X - self.width//2 and 
+                rightX >= left2X + self.width // 2 and 
+                bottomY >= top2Y + self.height // 2 and 
+                topY <= bottom2Y and app.action != "Slide" and 
+                not self.touching and attacker[2] != True):
+
                 app.mainChar.health -= 25 if attacker[-1] == True else 20
                 app.mainChar.startBlinking()
                 self.touching = True
                 return True
-            elif self.touching == True and leftX > right2X or rightX < left2X or bottomY < top2Y or topY > bottom2Y: # Reverse of the above condition
+            elif (self.touching == True and 
+                  leftX > right2X or rightX < left2X or 
+                  bottomY < top2Y or topY > bottom2Y): # Reverse of the above condition
                 self.touching = False
                 return False
                 
@@ -316,7 +315,11 @@ class Attacker:
             left2X = attacker[0] - self.width // 2
             top2Y = attacker[1] - self.height // 2
             bottom2Y = attacker[1] + self.height // 2
-            if leftX <= right2X - self.width//2 and rightX >= left2X + self.width // 2 and bottomY >= top2Y + self.height // 2 and topY <= bottom2Y and app.action == "Slide" and not self.touching:
+            if (leftX <= right2X - self.width//2 and 
+                rightX >= left2X + self.width // 2 and 
+                bottomY >= top2Y + self.height // 2 and 
+                topY <= bottom2Y and app.action == "Slide" and 
+                not self.touching):
                 attacker[2] = True
                 return
                 
@@ -334,7 +337,10 @@ class Attacker:
                 bottom2Y = attacker[1] + self.height // 2
 
 
-                if leftX <= right2X - app.batarangs.width//2 and rightX >= left2X + app.batarangs.width//2 and bottomY >= top2Y + app.batarangs.height//2 and topY <= bottom2Y and not self.touching:
+                if (leftX <= right2X - app.batarangs.width//2 and 
+                    rightX >= left2X + app.batarangs.width//2 and 
+                    bottomY >= top2Y + app.batarangs.height//2 and
+                    topY <= bottom2Y and not self.touching):
                     attacker[2] = True
                     return
 
@@ -362,7 +368,7 @@ class Attacker:
 
 
 
-# Only in level 2        
+# Only in medium and hard and free play      
 class Boulder:
     def __init__(self):
         self.boulders = []  # Each boulder is [x, y, width, height]
@@ -402,12 +408,9 @@ class Boulder:
             if (playerRight >= boulderLeft and playerLeft <= boulderRight and
                 playerBottom >= boulderTop and playerTop <= boulderBottom and 
                 self.touching == False):
-                print((playerRight, boulderLeft), (playerLeft, boulderRight), (playerBottom, boulderTop), (playerTop, boulderBottom))
                 self.touching = True
                 app.mainChar.health -= 15
-                print("colliding with box")
                 app.mainChar.startBlinking()  # Trigger blinking
-                # self.boulders.remove(boulder)  # Remove the boulder after collision
             elif (playerRight < boulderLeft or playerLeft >= boulderRight or
                 playerBottom <= boulderTop or playerTop >= boulderBottom):
                 self.touching = False
@@ -427,10 +430,6 @@ class Boulder:
         self.boulders = [boulder for boulder in self.boulders if boulder[0] + boulder[2] > 0]
 
     
-
-
-
-        
 class Quizzes:
     def __init__(self) -> None:
         self.x = 0
@@ -498,18 +497,25 @@ class collectibles:
             self.timeFrequency = random.randint(1, 5)
             if thisCollectible == "health":
                 width, height = getImageSize(COLLECTIBLES["health"])
-                self.collectibles.append(["health", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+                self.collectibles.append(["health", app.width, 
+                                          app.mainChar.ground - app.mainChar.height // 2,
+                                            width, height])
             elif thisCollectible == "x2":
                 width, height = getImageSize(COLLECTIBLES["x2"])
-                self.collectibles.append(["x2", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+                self.collectibles.append(["x2", app.width, 
+                                          app.mainChar.ground - app.mainChar.height // 2,
+                                            width, height])
             elif thisCollectible == "batarangs":
                 width, height = getImageSize(COLLECTIBLES["batarangs"])
-                self.collectibles.append(["batarangs", app.width, app.mainChar.ground - app.mainChar.height // 2, width, height])
+                self.collectibles.append(["batarangs", app.width, 
+                                          app.mainChar.ground - app.mainChar.height // 2,
+                                            width, height])
 
 
     def drawCollectible(self, app):
         for collectible in self.collectibles:
-            drawImage(COLLECTIBLES[collectible[0]], collectible[1], collectible[2], width=50, height=50, align="center")
+            drawImage(COLLECTIBLES[collectible[0]], collectible[1], collectible[2], 
+                      width=50, height=50, align="center")
 
     def animateCollectible(self, app):
         for collectible in self.collectibles:
@@ -590,7 +596,9 @@ class Batarang:
 
     def drawBatarangs(self, app):
         for batarang in self.curBatarangs[:]:
-            drawImage(COLLECTIBLES["batarangs"], batarang[0], batarang[1], align='center', width=self.width, height=self.height, rotateAngle = app.batarangAngle)
+            drawImage(COLLECTIBLES["batarangs"], batarang[0], batarang[1],
+                       align='center', width=self.width, height=self.height, 
+                       rotateAngle = app.batarangAngle)
 
     def drawBatarangCount(self, app):
         drawLabel(f"Batarangs : {len(self.batarangs)}", 70, 80, size=20)
@@ -600,7 +608,7 @@ class Batarang:
         self.initialiseBatrangsArray(app)
         self.removeBatarang(app)
         app.batarangAngle += 10
-        for batarang in self.curBatarangs[:]: # if len(self.curBatarangs) >= 0
+        for batarang in self.curBatarangs[:]: 
             batarang[0] += 20
 
 
@@ -610,8 +618,8 @@ class Batarang:
 class Frames:
     def __init__(self):
         self.currentFrame = 0  # Start with the first frame index
-        self.frameWidth = 800  # Width of each frame
-        self.xOffset = app.scrollX  # Horizontal offset for scrolling
+        self.frameWidth = 800 
+        self.xOffset = app.scrollX
         self.frames = [self.drawFrame1, self.drawFrame2]  # List of frame drawing functions
 
     def scrollRight(self):
@@ -625,7 +633,6 @@ class Frames:
             self.frames.append(self.frames.pop(0))
 
     def drawFrames(self, app):
-        # Draw current and next frame for seamless transition
         for i in range(2):  # Draw two frames at a time for smooth transition
             xPosition = i * self.frameWidth + self.xOffset
             if xPosition < app.width:
@@ -699,14 +706,19 @@ class DeanPower:
         drawRect(10, 35, 100, 10, fill=None, border='black')
         drawRect(10, 35, app.bonusMeter, 10, fill='gold') if app.bonusMeter > 0 else None
         if app.deanTrickActive:
-            drawLabel("DEAN TRICK ACTIVATED!", app.width/2, 50, size=20, fill='red')
+            drawLabel("DEAN TRICK ACTIVATED!", app.width/2, 50, size=20, 
+                      fill='red')
 
         if app.deanTrickReady:
-                drawLabel("Press 'D' for DEAN Trick!", app.width / 2, 30, size=20, fill="green")
+                drawLabel("Press 'D' for DEAN Trick!", app.width / 2, 30, 
+                          size=20, fill="green")
 
     def onStep(self, app):
         self.steps += 1
-        if app.difficulty == "Hard" and not app.deanTrickActive and self.steps % 60 == 0:
+        if (app.difficulty == "Hard" and
+             not app.deanTrickActive and 
+             self.steps % 60 == 0):
+            
             app.bonusMeter = min(app.bonusMeter + 10, 100)
             if app.bonusMeter >= 100:
                 app.deanTrickReady = True
