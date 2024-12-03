@@ -533,6 +533,7 @@ class collectibles:
                     app.mainChar.health = 100
                 elif collectible[0] == "x2":
                     app.scoreDoubled = True # Remove this after some time passes by
+                    app.doubleTimeStarted = app.steps
                 else:
                     app.mainChar.powerUps["batarangs"] += 3
                     # app.batarangs.initialiseBatrangsArray(app)
@@ -549,6 +550,10 @@ class collectibles:
         self.animateCollectible(app)
         self.removeCollectible(app)
         self.detectCollectible(app)
+
+        
+        if app.steps - app.doubleTimeStarted == 210:
+            app.scoreDoubled = False
 
 
 

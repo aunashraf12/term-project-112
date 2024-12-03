@@ -338,6 +338,8 @@ def reset(app):
     app.steps = 0
     app.score = 0
     app.pauseButtonFill = "gray"
+    app.scoreDoubled = False
+    app.doubleTimeStarted = False
     app.paused = False
     app.pauseButtonPressed =  False # This is the physcical pause button check
     app.action = "Run"
@@ -357,7 +359,6 @@ def reset(app):
     app.sliding = False
     app.jumpCount = 0
     app.poleTimer = 0
-    app.stepMode = False
     app.gameOver = False
     app.bonusMeter = 0
     app.deanTrickReady = False
@@ -392,11 +393,6 @@ def game_onKeyPress(app, key):
         elif not app.sliding:
             app.action = "Run"
         
-        if key == "s":
-            if app.stepMode == True:
-                takeStep(app)
-        if key == "S":
-            app.stepMode = not app.stepMode
         if key == "left":
             app.batarangs.throwBatarang(app)
 
@@ -431,7 +427,10 @@ def game_redrawAll(app):
         # drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
     app.frames.drawFrames(app)
     drawLine(0, app.mainChar.ground, app.width, app.mainChar.ground)
-    drawLabel(f"Score : {app.score}", 50, 55, size=20)
+    if app.scoreDoubled:
+        drawLabel(f"Score x2 : {app.score}", 50 + 10, 55, size=20)
+    else:
+        drawLabel(f"Score : {app.score}", 50, 55, size=20)
     app.mainChar.draw(app)
     app.poles.drawPole(app)
     app.quizzes.draw(app)
@@ -484,17 +483,12 @@ def game_redrawAll(app):
             drawLabel(label, x, y, size=20, fill="black")
 
 
-def takeStep(app):
-    app.mainChar.onStep(app)
-    app.poles.onStep(app)
-    app.quizzes.onStep(app)
-
     
 
 def game_onStep(app):
     # app.mainChar.jump(app)
     if app.paused == False:
-        if not app.stepMode and not app.gameOver:
+        if not app.gameOver:
             app.steps += 1
             app.mainChar.onStep(app)
             app.poles.onStep(app)
@@ -512,12 +506,16 @@ def game_onStep(app):
             with open('High Score.txt', 'r', encoding='utf-8') as file: 
                 data = file.readlines() 
             print(data)
-            data[0] = str(app.score) if int(app.highScore) < int(app.score) else str(app.highScore)
+            if int(app.score) > int(data[0]):
+                data[0] = str(app.score)
             with open('High Score.txt', 'w', encoding='utf-8') as file: 
                 file.writelines(data) 
 
         if app.steps % 20 == 0:
-            app.score += 1
+            if app.scoreDoubled:
+                app.score += 2
+            else:
+                app.score += 1
 
         if app.width != 800 or app.height != 425:
             app.width = 800
