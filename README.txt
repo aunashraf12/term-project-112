@@ -26,6 +26,7 @@ classes.py
 functions.py
 main.py
 Images (contains all sprite and image assets)
+templerun
 High Score.txt (used to store high scores)
 gameMusic.mp3
 menuMusic.mp3
