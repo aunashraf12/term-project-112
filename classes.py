@@ -114,15 +114,6 @@ class MainChar:
             return True
         return False
 
-        
-    def swing(self, app, x, y):
-        # Line
-        drawLine(x, y, self.x, self.y)
-        
-        if app.swingingPivot == True and abs(app.swingingPivotX - app.mainCharX ) <= 100: # Now check with the space bar in OnkeyHold
-            # Circular motion
-            # Harcode the arc length values
-            pass
 
 
     def startBlinking(self):
@@ -133,8 +124,7 @@ class MainChar:
 
     def onStep(self, app):
         # self.gravity(app)
-        if not app.swinging:
-            self.update(app)
+        self.update(app)
         self.grounded(app) # Checks if the object is grounded and sets the jump count to zero
         self.steps += 1
         if self.steps % 30 == 0:
@@ -237,93 +227,6 @@ class Poles:
                     return True
 
         return False
-
-
-
-class pivots:
-    def __init__(self, app) -> None:
-        self.x = app.width # random between 300 and 500
-        self.y = app.height / 2
-        self.r = 10
-        self.steps = 0
-        self.pivots = []
-
-    def addPivot(self, app):
-        if len(self.pivots) == 0:
-            self.pivots.append([self.x, self.y, self.r])
-
-    def drawPivot(self, app):
-        for pivot in self.pivots:
-            drawCircle(pivot[0], pivot[1], self.r, fill="red")
-
-    def removePivot(self, app):
-        for pivot in self.pivots[:]:
-            if pivot[0] + pivot[2] < 0:
-                self.pivots.remove(pivot)
-
-
-    def onStep(self, app):
-        for pivot in self.pivots:
-            pivot[0] -= 10
-        self.steps += 1
-        if self.steps % 120 == 0:
-            self.addPivot(app)
-
-        self.removePivot(app)
-
-        for pivot in self.pivots:
-            if abs(app.mainChar.pos[0] - pivot[0]) < 100:
-                    app.swingingPivots.stopSwinging()
-
-
-
-class swingingPivot:
-    def __init__(self, length=150, swingRange=(-math.pi/4, math.pi/4)):
-        self.length = length
-        self.swingRange = swingRange
-        self.angle = 0
-        self.angularVelocity = 0
-        self.gravity = 0.0005
-        app.swinging = False
-
-    def startSwinging(self, x, y):
-        self.pivotX = x
-        self.pivotY = y
-        app.swinging = True
-
-    def stopSwinging(self):
-        app.swinging = False
-
-    def update(self, player):
-        if app.swinging:
-            # Apply physics
-            angularAcceleration = -self.gravity * math.sin(self.angle)
-            self.angularVelocity += angularAcceleration
-            self.angle += self.angularVelocity
-
-            # Release if angle exceeds maximum right swing
-            if self.angle >= self.swingRange[1]:
-                app.swinging = False
-                tangentialSpeed = self.angularVelocity * self.length
-                app.mainChar.dx = tangentialSpeed * math.cos(self.angle)
-                app.mainChar.dy = tangentialSpeed * math.sin(self.angle)
-                return
-
-            # Update player position
-            # app.mainChar.pos[0] = self.pivotX + self.length * math.sin(self.angle)
-            app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
-
-    def draw(self):
-        if app.swinging:
-            # Draw the rope
-            drawLine(self.pivotX, self.pivotY, app.mainChar.pos[0], app.mainChar.pos[1], fill="black", lineWidth=2)
-
-        # Draw the pivot
-        drawCircle(self.pivotX, self.pivotY, 5, fill="red")
-
-    def onStep(self, app):
-        if app.swinging:
-            self.update(app)
 
 class Attacker:
     def __init__(self) -> None:
@@ -812,7 +715,6 @@ class DeanPower:
                 app.quizzes.quizzes.clear()
                 app.attacker.attackers.clear()
                 app.boulder.boulders.clear()
-                app.pivots.pivots.clear()
             else:
                 app.deanTrickActive = False  # End the DEAN Trick
                 app.deanTrickReady = False  # Reset readiness

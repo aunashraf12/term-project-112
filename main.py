@@ -75,6 +75,10 @@ def onAppStart(app):
     with open('./High Score.txt') as f:
         app.highScore = f.readline()
 
+def main_onAppStart(app):
+    with open('./High Score.txt') as f:
+        app.highScore = f.readline()
+
 def main_redrawAll(app):
     # if app.showTutorial:
     #     pass
@@ -167,6 +171,7 @@ def main_onMousePress(app, mouseX, mouseY):
                 setActiveScreen("challengeModes")
                 print("Challenge Mode selected.")
             elif action == "instructions":
+                setActiveScreen("instructions")
                 print("Instructions selected.")
             elif action == "quit":
                 exit()
@@ -177,6 +182,9 @@ def main_onKeyPress(app, key):
 
 
 def main_onStep(app):
+    with open('./High Score.txt') as f:
+        app.highScore = f.readline()
+
     app.steps += 1
 
     if app.loading:
@@ -201,13 +209,14 @@ def instructions_redrawAll(app):
         "3. Avoid black circles (Quizzes), attackers and other obstacles.",
         "4. Collect power-ups for help.",
         "5. You can throw batarangs using the left arrow key.",
-        "6. Swing using SPACE and release with SPACE."
+        "6. Slide to kill attackers",
+        "7. Try to dodge the grey rectangles and the bullets."
     ]
     for i, line in enumerate(instructions):
         drawLabel(line, app.width / 2, app.height / 4 + i * 30, size=18, fill="black")
 
     # Back Button
-    drawRect(app.width / 2 - 75, app.height - 100, 150, 40, fill="gray", border="black", align="center")
+    drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray", border="black", align="center")
     drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, fill="black")
 
 
@@ -334,11 +343,8 @@ def reset(app):
     app.action = "Run"
     app.mainSpriteIndex = 0
     animate(app)
-    app.swinging = False
     app.mainChar = MainChar(app)
     app.attacker = Attacker()
-    app.swingingPivots = swingingPivot()
-    app.pivots = pivots(app)
     app.mainChar.hover = False
     app.poles = Poles()
     app.quizzes = Quizzes()
@@ -405,13 +411,6 @@ def game_onKeyHold(app, keys):
         if "down" in keys and not app.jumping:
             app.sliding = True
             app.action = "Slide"
-
-        if "space" in keys and not app.swinging:  
-            # Check if player is near enough to start swinging
-            for pivot in app.pivots.pivots:
-                if abs(app.mainChar.pos[0] - pivot[0]) < 100:
-                    app.swingingPivots.startSwinging(pivot[0], pivot[1])
-
     
 
 
@@ -427,11 +426,6 @@ def game_onKeyRelease(app, key):
             app.sliding = False
             app.action = "Run"
 
-        if key == "space":
-            app.swingingPivots.stopSwinging()
-        
-    
-
 def game_redrawAll(app):
     # if app.paused == False:
         # drawImage(BACKGROUND_IMAGE_URL, app.width/2, app.height/2, width=app.width, height=app.height, align ="center")
@@ -441,7 +435,6 @@ def game_redrawAll(app):
     app.mainChar.draw(app)
     app.poles.drawPole(app)
     app.quizzes.draw(app)
-    app.pivots.drawPivot(app)
     app.collectibles.drawCollectible(app)
     app.batarangs.drawBatarangs(app)
     app.batarangs.drawBatarangCount(app)
@@ -509,8 +502,6 @@ def game_onStep(app):
             app.quizzes.onStep(app)
             app.collectibles.onStep(app)
             app.batarangs.onStep(app)
-            app.swingingPivots.onStep(app)
-            app.pivots.onStep(app)
             if app.difficulty != "Easy":
                 app.boulder.onStep(app)
 
@@ -527,6 +518,10 @@ def game_onStep(app):
 
         if app.steps % 20 == 0:
             app.score += 1
+
+        if app.width != 800 or app.height != 425:
+            app.width = 800
+            app.height = 425
  
 def game_onMouseMove(app, mouseX, mouseY):
     if app.width - 100 <= mouseX <= app.width - 10 and 10 <= mouseY <= 50:
@@ -610,15 +605,4 @@ def game_onMousePress(app, mouseX, mouseY):
 
 
 
-# runApp(width=764, height=425)
-
-
-print("""For now there is a start screen. The square can jump and then move 
-onto the coming poles. There are new poles appearing as well as some black
-balls which represent quizzes for now
-There is a health bar that changes after it is hit 
-by one of the black balls I am in the process of implementing the swinging
-mechanism using hangers but haven't finished. The game is over when the 
-health becomes zero.""")
-print("jjh")
 runAppWithScreens(width=800, height=425, initialScreen='main')
