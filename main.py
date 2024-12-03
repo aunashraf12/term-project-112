@@ -10,9 +10,9 @@ def onJoyPress(app, button, joystick):
     if button == '5':
         sys.exit(0)
 
-GAME_OVER_MUSIC = Sound("./gameOverMusic.mp3")
-MENU_MUSIC = Sound("./menuMusic.mp3")
-GAME_MUSIC = Sound("./gameMusic.mp3")
+GAME_OVER_MUSIC = Sound("./gameOverMusic.mp3") # Source : https://pixabay.com/music/
+MENU_MUSIC = Sound("./menuMusic.mp3") # Source: https://pixabay.com/music/ 
+GAME_MUSIC = Sound("./gameMusic.mp3") # Source https://downloads.khinsider.com/game-soundtracks/album/crypt-of-the-necrodancer
 
 LEVEL_ATTRIBUTES = {
     "Easy": {
