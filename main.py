@@ -62,6 +62,9 @@ LEVEL_ATTRIBUTES = {
 def onAppStart(app):
     print("started")
     app.difficulty = "Hard"
+    app.steps = 0
+    app.progress = 0
+    app.loading = False
     app.fillColour1 = None
     app.fillColour2 = None
     app.fillColour3 = None
@@ -79,6 +82,9 @@ def main_redrawAll(app):
     #     pass
     # else:
     # Gradient background
+
+    
+
     for i in range(0, app.height, 5):
         color = rgb(135 - i // 10, 206 - i // 15, 250 - i // 20)  # Sky blue gradient
         drawRect(0, i, app.width, 5, fill=color)
@@ -105,6 +111,23 @@ def main_redrawAll(app):
     # Footer
     drawLabel("Hover over buttons to highlight, click to select!", app.width / 2, app.height - 20, size=12, fill="darkGray")
 
+    if app.loading:  # Show loading screen
+        drawRect(0, 0, app.width, app.height, fill="green")
+
+        # Loading title
+        drawLabel("Get Ready for Freeplay!", app.width / 2, app.height / 4, size=30, fill="white", bold=True)
+
+        # Theme message
+        drawLabel("Strive to survive as long as you can.", app.width / 2, app.height / 3, size=20, fill="lightGray")
+        drawLabel("Be careful about your health!", app.width / 2, app.height / 3 + 30, size=20, fill="lightGray")
+
+        # Progress Bar
+        
+        barWidth = app.progress * 300
+        drawRect(app.width / 2 , app.height / 2, 300, 20, fill="gray", border="white", align="center")
+        drawRect(app.width / 2 , app.height / 2, barWidth + 0.1, 20, fill="lightGreen", align="center")
+
+        
 def main_onMouseMove(app, mouseX, mouseY):
     # Determine hover effect
     button_positions = [
@@ -136,7 +159,9 @@ def main_onMousePress(app, mouseX, mouseY):
             if action == "highScore":
                 print("High Score selected.")
             elif action == "freePlay":
-                setActiveScreen('game')  # Example
+                app.loading = True  # Activate the loading screen
+                app.loadingStartTime = app.steps  # Track when the loading starts
+                # setActiveScreen('game')  # Example
             elif action == "challengeMode":
                 app.showChallengeOptions = True
                 setActiveScreen("challengeModes")
@@ -150,6 +175,17 @@ def main_onKeyPress(app, key):
     if key == "m":  # Return to main menu
         setActiveScreen("main")
 
+
+def main_onStep(app):
+    app.steps += 1
+
+    if app.loading:
+        app.progress = min((app.steps - app.loadingStartTime) / 240, 1)  # 240 steps = 4 seconds
+        if app.progress >= 1:  # Loading complete
+                app.loading = False
+                setActiveScreen('game')  # Start Freeplay mode
+
+
 # Instructions Screen
 def instructions_redrawAll(app):
     # Background
@@ -160,11 +196,11 @@ def instructions_redrawAll(app):
 
     # Instructions Text
     instructions = [
-        "1. Press UP to jump and double jump.",
+        "1. Press UP to jump and double jump. and down to slide",
         "2. Press and hold UP to hover after a double jump.",
-        "3. Avoid black circles (Quizzes).",
-        "4. Collect power-ups for bonuses.",
-        "5. Press R to reset and P to pause.",
+        "3. Avoid black circles (Quizzes), attackers and other obstacles.",
+        "4. Collect power-ups for help.",
+        "5. You can throw batarangs using the left arrow key.",
         "6. Swing using SPACE and release with SPACE."
     ]
     for i, line in enumerate(instructions):
@@ -179,6 +215,7 @@ def instructions_onMousePress(app, mouseX, mouseY):
     # Check if the "Back to Menu" button is clicked
     if app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and app.height - 100 - 20 <= mouseY <= app.height - 100 + 20:
         setActiveScreen("main")
+
 
 
 # Challenge Modes Screen
@@ -202,6 +239,33 @@ def challengeModes_redrawAll(app):
     # Back Button
     drawRect(app.width / 2, app.height - 100, 150, 40, fill="gray", border="black", align="center")
     drawLabel("Back to Menu", app.width / 2, app.height - 100, size=20, fill="black")
+
+    if app.loading:
+        drawRect(0, 0, app.width, app.height, fill="green")
+
+        # Loading title
+        drawLabel(f"Get Ready for {app.selectedDifficulty} Mode!", app.width / 2, app.height / 4, size=30, fill="white", bold=True)
+
+        # Display the theme message based on the selected mode
+        if app.selectedDifficulty == "Easy":
+            theme_message = ["Avoid the incoming attackers and quizzes."]
+        elif app.selectedDifficulty == "Medium":
+            theme_message = ["Beware the gray boxes!", "They will decrease your health wherever you hit them."]
+        elif app.selectedDifficulty == "Hard":
+            theme_message = ["You will need Dean Trick's help to survive!"]
+        else:
+            theme_message = []
+
+        for i, line in enumerate(theme_message):
+            drawLabel(line, app.width / 2, app.height / 3 + i * 30, size=20, fill="lightGray")
+
+
+        
+        barWidth = app.progress * 300
+        drawRect(app.width / 2, app.height / 2, 300, 20, fill="gray", border="white", align="center")
+        drawRect(app.width / 2, app.height / 2, barWidth + 0.1, 20, fill="lightGreen", align="center")
+
+        
 
 
 def challengeModes_onMouseMove(app, mouseX, mouseY):
@@ -229,14 +293,26 @@ def challengeModes_onMousePress(app, mouseX, mouseY):
     ]
     for x1, y1, x2, y2, difficulty in button_positions:
         if x1 <= mouseX <= x2 and y1 <= mouseY <= y2:
-            app.difficulty = difficulty  # Set difficulty in the app
-            setActiveScreen('game')  # Start the game
-            print(f"Selected {difficulty} mode!")
+            app.loading = True
+            app.loadingStartTime = app.steps
+            app.selectedDifficulty = difficulty  # Store selected difficulty
+
+            # app.difficulty = difficulty  # Set difficulty in the app
+            # setActiveScreen('game')  # Start the game
+            # print(f"Selected {difficulty} mode!")
 
     # Back to Menu
     if app.width / 2 - 75 <= mouseX <= app.width / 2 + 75 and app.height - 100 - 20 <= mouseY <= app.height - 100 + 20:
         setActiveScreen("main")
 
+def challengeModes_onStep(app):
+    app.steps += 1
+    if app.loading:
+        app.progress = min((app.steps - app.loadingStartTime) / 240, 1)  # 240 steps = 4 seconds
+        if app.progress >= 1:  # Loading complete
+                app.loading = False
+                app.difficulty = app.selectedDifficulty  # Set the game's difficulty
+                setActiveScreen('game')  # Start the game
 
 def reset(app):
     levelConfig = LEVEL_ATTRIBUTES[app.difficulty]
@@ -395,8 +471,24 @@ def game_redrawAll(app):
             drawRect(x, y, 240, 50, fill=fill, border="white", align="center")
             drawLabel(label, x, y, size=20, fill="black")
 
-    if app.gameOver:
-        drawLabel('Game Over', app.width // 2, app.height // 2, size=24)
+    elif app.gameOver:
+        # Background overlay
+        drawRect(0, 0, app.width, app.height, fill="black", opacity=70)
+
+        # Game Over Title
+        drawLabel("Game Over!", app.width / 2, app.height / 3 - 60, size=40, fill="red", bold=True)
+
+        # Final Score
+        drawLabel(f"Your Score: {app.score}", app.width / 2, app.height / 3, size=25, fill="white")
+
+        # Buttons
+        button_specs = [
+            ("Retry", app.width / 2, app.height / 3 + 80, app.fillColour1),
+            ("Main Menu", app.width / 2, app.height / 3 + 140, app.fillColour2),
+        ]
+        for label, x, y, fill in button_specs:
+            drawRect(x, y, 200, 50, fill=fill, border="white", align="center")
+            drawLabel(label, x, y, size=20, fill="black")
 
 
 def takeStep(app):
@@ -425,10 +517,6 @@ def game_onStep(app):
             if app.difficulty == "Hard":
                 app.deanPower.onStep(app)
 
-
-            
-
-
         elif app.gameOver:
             with open('High Score.txt', 'r', encoding='utf-8') as file: 
                 data = file.readlines() 
@@ -439,11 +527,7 @@ def game_onStep(app):
 
         if app.steps % 20 == 0:
             app.score += 1
-        
-        
-
-
-
+ 
 def game_onMouseMove(app, mouseX, mouseY):
     if app.width - 100 <= mouseX <= app.width - 10 and 10 <= mouseY <= 50:
         app.pauseButtonFill = "lightGray"
@@ -466,6 +550,19 @@ def game_onMouseMove(app, mouseX, mouseY):
 
         # Update button colors
         app.fillColour1, app.fillColour2, app.fillColour3 = fills
+    if app.gameOver:
+        # Highlight buttons
+        button_positions = [
+            (app.width / 2 - 100, app.height / 3 + 55, app.width / 2 + 100, app.height / 3 + 105),  # Retry
+            (app.width / 2 - 100, app.height / 3 + 115, app.width / 2 + 100, app.height / 3 + 165),  # Main Menu
+        ]
+        fills = ["lightGray", "lightGray"]
+
+        for i, (x1, y1, x2, y2) in enumerate(button_positions):
+            if x1 <= mouseX <= x2 and y1 <= mouseY <= y2:
+                fills[i] = "gray"
+
+        app.fillColour1, app.fillColour2 = fills
 
 
         # Need to do the third one both here and up in main as well
@@ -494,6 +591,22 @@ def game_onMousePress(app, mouseX, mouseY):
                     reset(app)
                 elif action == "quit":
                     exit()
+
+    if app.gameOver:
+        # Button positions
+        button_positions = [
+            (app.width / 2 - 100, app.height / 3 + 55, app.width / 2 + 100, app.height / 3 + 105, "retry"),
+            (app.width / 2 - 100, app.height / 3 + 115, app.width / 2 + 100, app.height / 3 + 165, "mainMenu"),
+        ]
+
+        for x1, y1, x2, y2, action in button_positions:
+            if x1 <= mouseX <= x2 and y1 <= mouseY <= y2:
+                if action == "retry":
+                    reset(app)  # Restart the game
+                    app.gameOver = False
+                elif action == "mainMenu":
+                    setActiveScreen("main")
+                    reset(app)
 
 
 
