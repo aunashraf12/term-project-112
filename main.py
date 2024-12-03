@@ -37,11 +37,11 @@ LEVEL_ATTRIBUTES = {
     },
     "Hard": {
         "ddy": 1.25,
-        "obstacleFrequency": 80,
+        "obstacleFrequency": 60,
         "bonusMeterEnabled": True,
-        "obstacleSpeed": 12,
+        "obstacleSpeed": 14,
         "attackerSpeed" : 20,
-        "attackerFrequency": 80,
+        "attackerFrequency": 60,
         "collectibleFrequency" : 400,
         "bonusDuration": 120
     },
