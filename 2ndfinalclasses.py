@@ -73,13 +73,15 @@ class MainChar:
         #                  self.velocity[1])
 
         # self.pos[0] += frameMovement[0]
-
-        if self.hover == False:
-            self.dy += self.ddy  # Gravity
-            self.pos[1] += self.dy  # Vertical movement
-        else:
-            self.dy += 0.15 * self.ddy  # 1/4 th Gravity for hovering
-            self.pos[1] += self.dy  # Vertical movement
+        
+        print(app.swingingPivots.swinging, app.swingingPivots.released)
+        if not app.swingingPivots.swinging and not app.swingingPivots.released:
+            if self.hover == False:
+                self.dy += self.ddy  # Gravity
+                self.pos[1] += self.dy  # Vertical movement
+            else:
+                self.dy += 0.15 * self.ddy  # 1/4 th Gravity for hovering
+                self.pos[1] += self.dy  # Vertical movement
 
         if self.pos[1] + self.height//2 >= self.ground:
             self.pos[1] = self.ground - self.width//2
@@ -180,7 +182,12 @@ class Poles:
 
     def animatePole(self, app):
         for pole in self.poles:
-            pole[0] -= app.obstacleSpeed
+            if app.swingingPivots.swinging:
+                pole[0] -= app.offsetXForSwinging
+            elif app.swingingPivots.released:
+                pole[0] -= app.offsetXForReleasing
+            else:
+                pole[0] -= app.obstacleSpeed
 
     def removePole(self, app):
         for pole in self.poles[:]:
@@ -271,59 +278,122 @@ class pivots:
 
         self.removePivot(app)
 
-        for pivot in self.pivots:
-            if abs(app.mainChar.pos[0] - pivot[0]) < 100:
-                    app.swingingPivots.stopSwinging()
+        # for pivot in self.pivots:
+        #     if abs(app.mainChar.pos[0] - pivot[0]) < 100:
+        #             app.swingingPivots.stopSwinging()
 
 
 
 class swingingPivot:
-    def __init__(self, length=150, swingRange=(-math.pi/4, math.pi/4)):
-        self.length = length
+    def __init__(self, length=100, swingRange=(-math.pi/4, math.pi/4)):
+        self.length = 50
         self.swingRange = swingRange
+        self.artificialX = app.mainChar.pos[0]
         self.angle = 0
         self.angularVelocity = 0
         self.gravity = 0.0005
         app.swinging = False
+        self.releasedTimer = 0
+        self.pivotX = 0 # Initialising
+        self.pivotY = 0
+        self.releaseX = 0
+
+        self.length = length  # Length of the pendulum
+        self.bobRadius = 10  # Radius of the pendulum bob
+        self.gravity = 200  # Gravity (m/s²)
+        
+        # Angular motion properties
+        self.angle = -math.pi / 3  # Initial angle (60 degrees left)
+        self.angularVelocity = 0  # Initial angular velocity
+        self.angularAcceleration = 0  # Initial angular acceleration
+        self.timeStep = 0.1  # Time step for simulation (faster motion)
+
+        # State
+        self.swinging = False  # Whether the pendulum is swinging
+        self.released = True  # Whether the pendulum has been released
+
+        self.bobDX = 0  # Horizontal velocity after release
+        self.bobDY = 0
+
+
 
     def startSwinging(self, x, y):
         self.pivotX = x
         self.pivotY = y
-        app.swinging = True
+        
+        self.swinging = True
 
-    def stopSwinging(self):
-        app.swinging = False
+    # def stopSwinging(self):
+    #     app.swinging = False
+
+
+    def release(self):
+        """Releases the pendulum."""
+        if self.swinging:
+            self.releasedTimer = 0
+            self.released = True
+            self.swinging = False
+            # Calculate release position and velocity
+            # self.bobX = self.pivotX + self.length * math.sin(self.angle)
+            self.releaseX = self.pivotX + self.length * math.sin(self.angle)
+            app.offsetXForReleasing = (self.pivotX + self.length * math.sin(self.angle) - self.artificialX)
+            self.artificialX = self.pivotX + self.length * math.sin(self.angle)
+            app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
+            self.bobDX = self.angularVelocity * self.length * math.cos(self.angle)  # Tangential velocity x-component
+            self.bobDY = -self.angularVelocity * self.length * math.sin(self.angle)  # Tangential velocity y-component
 
     def update(self, player):
-        if app.swinging:
-            # Apply physics
-            angularAcceleration = -self.gravity * math.sin(self.angle)
-            self.angularVelocity += angularAcceleration
-            self.angle += self.angularVelocity
+        if self.swinging and not self.released:
+            # Calculate angular acceleration: α = -g / L * sin(θ)
+            self.angularAcceleration = -self.gravity / self.length * math.sin(self.angle)
+            
+            # Update angular velocity and angle
+            self.angularVelocity += self.angularAcceleration * self.timeStep
+            self.angle += self.angularVelocity * self.timeStep
 
-            # Release if angle exceeds maximum right swing
-            if self.angle >= self.swingRange[1]:
-                app.swinging = False
-                tangentialSpeed = self.angularVelocity * self.length
-                app.mainChar.dx = tangentialSpeed * math.cos(self.angle)
-                app.mainChar.dy = tangentialSpeed * math.sin(self.angle)
-                return
+            # Dampen angular velocity to simulate energy loss (optional)
+            # self.angularVelocity *= 0.09999995
 
-            # Update player position
-            # app.mainChar.pos[0] = self.pivotX + self.length * math.sin(self.angle)
-            app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
+            # Automatically release when pendulum reaches horizontal position
+            if self.angle >= math.pi / 2:
+                self.release()
+
+        elif self.released:
+            
+            # Update released bob's position with linear motion
+            self.bobDY += self.gravity * self.timeStep  # Gravity affects vertical motion
+            app.offsetXForReleasing = (self.artificialX - self.releaseX)
+            self.artificialX += self.bobDX * self.timeStep
+            # self.bobY += self.bobDY * self.timeStep
+            app.mainChar.pos[1] += self.bobDY * self.timeStep
 
     def draw(self):
-        if app.swinging:
-            # Draw the rope
+        if not self.released:
+            # # Draw the rope
+            # app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
+
+            # app.offsetXForSwinging = abs(self.pivotX + self.length * math.sin(self.angle) - self.artificialX) # the offset the player would move if it had the ability to move horizontally 
+            # self.artificialX = self.pivotX + self.length * math.sin(self.angle)
+            print("released")
             drawLine(self.pivotX, self.pivotY, app.mainChar.pos[0], app.mainChar.pos[1], fill="black", lineWidth=2)
 
-        # Draw the pivot
-        drawCircle(self.pivotX, self.pivotY, 5, fill="red")
 
     def onStep(self, app):
-        if app.swinging:
-            self.update(app)
+        # if app.swinging:
+        self.update(app)
+
+        print(self.released)
+        if self.released:
+            self.releasedTimer += 1
+            if self.releasedTimer % 20 == 0:
+                self.released = False
+
+        if self.swinging and not self.released:
+            # Draw the rope
+            app.mainChar.pos[1] = self.pivotY + self.length * math.cos(self.angle)
+
+            app.offsetXForSwinging = abs(self.pivotX + self.length * math.sin(self.angle) - self.artificialX) # the offset the player would move if it had the ability to move horizontally 
+            self.artificialX = self.pivotX + self.length * math.sin(self.angle)
 
 class Attacker:
     def __init__(self) -> None:
@@ -708,7 +778,15 @@ class Frames:
 
     def scrollRight(self):
         # Move frames to the left by increasing xOffset
-        self.xOffset -= 10  # Adjust speed as needed
+        # if app.swingingPivots.swinging:
+        #         self.xOffset -= app.offsetXForSwinging
+        # elif app.swingingPivots.released:
+        #     self.xOffset -= app.offsetXForReleasing
+        # else:
+        if app.swingingPivots.swinging or app.swingingPivots.released:
+            self.xOffset -= 5
+        else:
+            self.xOffset -= 10  # Adjust speed as needed
 
         # Reset xOffset to loop frames infinitely
         if self.xOffset <= -self.frameWidth:
@@ -788,8 +866,8 @@ class DeanPower:
         self.steps = 0
 
     def draw(self, app):
-        drawRect(10, 35, 100, 10, fill=None, border='black')
-        drawRect(10, 35, app.bonusMeter, 10, fill='gold') if app.bonusMeter > 0 else None
+        drawRect(10, 40, 100, 10, fill=None, border='black')
+        drawRect(10, 40, app.bonusMeter, 10, fill='gold') if app.bonusMeter > 0 else None
         if app.deanTrickActive:
             drawLabel("DEAN TRICK ACTIVATED!", app.width/2, 50, size=20, fill='red')
 
